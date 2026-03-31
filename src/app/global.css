@@ -12,6 +12,61 @@
     }
 }
 
+/* Selects nativos del panel admin: lista desplegable legible en claro/oscuro (evita texto claro sobre fondo claro). */
+@layer components {
+    .admin-native-select-dark {
+        color-scheme: dark;
+    }
+    .admin-native-select-dark option,
+    .admin-native-select-dark optgroup {
+        background-color: rgb(31 41 55);
+        color: rgb(243 244 246);
+    }
+    .admin-native-select-light {
+        color-scheme: light;
+    }
+    .admin-native-select-light option,
+    .admin-native-select-light optgroup {
+        background-color: rgb(255 255 255);
+        color: rgb(17 24 39);
+    }
+
+    /* Inputs type=date en panel admin (modo oscuro): icono de calendario legible (sin color-scheme en el input: evita icono nativo que no invierte bien). */
+    .admin-date-input-dark::-webkit-calendar-picker-indicator {
+        filter: invert(1) !important;
+        opacity: 0.92;
+        cursor: pointer;
+    }
+    .admin-date-input-dark::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+    .admin-date-input-dark::-moz-calendar-picker-indicator {
+        filter: invert(1) !important;
+        opacity: 0.92;
+        cursor: pointer;
+    }
+
+    /* Filtro con valor (fondo claro): icono de calendario oscuro, sin invert */
+    .admin-date-input-filled::-webkit-calendar-picker-indicator {
+        filter: none !important;
+        opacity: 1;
+        cursor: pointer;
+    }
+    .admin-date-input-filled::-moz-calendar-picker-indicator {
+        filter: none !important;
+        opacity: 1;
+        cursor: pointer;
+    }
+}
+
+/* Registro: icono emergencia — tintes sólidos marca (#FF8000 ↔ emerald) */
+.privacy-icon-tint-orange {
+    filter: brightness(0) saturate(100%) invert(54%) sepia(98%) saturate(1800%) hue-rotate(359deg) brightness(103%) contrast(105%);
+}
+.privacy-icon-tint-green {
+    filter: brightness(0) saturate(100%) invert(44%) sepia(72%) saturate(640%) hue-rotate(115deg) brightness(96%) contrast(94%);
+}
+
 @keyframes carrusel-right {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }

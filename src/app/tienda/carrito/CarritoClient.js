@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -50,7 +50,6 @@ export default function CarritoClient() {
     const [loginRequiredOpen, setLoginRequiredOpen] = useState(false)
     const [checkoutLoading, setCheckoutLoading] = useState(false)
     const [checkoutError, setCheckoutError] = useState(null)
-    const paypalCaptureStarted = useRef(false)
 
     // Usuario logueado: GET /carrito ya trae imagen y stock → una sola petición. Invitado: necesita getPorClaves.
     const cartKeys = cartItems?.map((i) => i.clave) ?? []
@@ -240,39 +239,42 @@ export default function CarritoClient() {
             return
         }
         if (searchParams.get('paypal_ok') !== '1') return
-        if (paypalCaptureStarted.current) return
         const orderId = searchParams.get('token')
         if (!orderId) {
             setCheckoutError('No se recibió la orden de PayPal.')
             router.replace('/tienda/carrito', { scroll: false })
             return
         }
-        paypalCaptureStarted.current = true
-        let cancelled = false
+        if (typeof window === 'undefined') return
+
+        const doneKey = `paypal_capture_done_${orderId}`
+        if (sessionStorage.getItem(doneKey)) {
+            router.replace('/tienda/carrito', { scroll: false })
+            router.push('/dashboard?tab=pedidos')
+            return
+        }
+        const lockKey = `paypal_capture_lock_${orderId}`
+        if (sessionStorage.getItem(lockKey)) return
+        sessionStorage.setItem(lockKey, '1')
         ;(async () => {
             setCheckoutLoading(true)
             setCheckoutError(null)
             try {
                 await capturePayPalOrder(orderId)
-                if (!cancelled) {
-                    router.replace('/tienda/carrito', { scroll: false })
-                    router.push('/dashboard?tab=pedidos')
-                }
+                sessionStorage.setItem(doneKey, '1')
+                sessionStorage.removeItem(lockKey)
+                router.replace('/tienda/carrito', { scroll: false })
+                router.push('/dashboard?tab=pedidos')
             } catch (e) {
-                if (!cancelled) {
-                    paypalCaptureStarted.current = false
-                    setCheckoutError(
-                        e?.message || e?.response?.data?.message || 'Error al confirmar PayPal'
-                    )
-                    router.replace('/tienda/carrito', { scroll: false })
-                }
+                sessionStorage.removeItem(lockKey)
+                setCheckoutError(
+                    e?.message || e?.response?.data?.message || 'Error al confirmar PayPal'
+                )
+                setPagarModal(true)
             } finally {
-                if (!cancelled) setCheckoutLoading(false)
+                setCheckoutLoading(false)
             }
         })()
-        return () => {
-            cancelled = true
-        }
     }, [mounted, isLogged, router, searchParams])
 
     const bg = darkMode ? 'bg-gray-900' : 'bg-gray-50'

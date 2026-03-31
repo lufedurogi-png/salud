@@ -8,10 +8,13 @@ import { useAdminAuth } from '@/hooks/useAdminAuth'
 
 const navItems = [
     { href: '/admin-home', label: 'Inicio', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+    { href: '/admin-margen-venta', label: 'Margen venta', gananciaIcon: true },
     { href: '/admin-mensajes', label: 'Mensajería', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
     { href: '/admin-respaldo', label: 'Respaldo BD', icon: 'M12 8c-3.314 0-6 1.343-6 3v2c0 1.657 2.686 3 6 3s6-1.343 6-3v-2c0-1.657-2.686-3-6-3zm0 8c-3.314 0-6-1.343-6-3v3c0 1.657 2.686 3 6 3s6-1.343 6-3v-3c0 1.657-2.686 3-6 3zm0 5c-3.314 0-6-1.343-6-3v3c0 1.657 2.686 3 6 3s6-1.343 6-3v-3c0 1.657-2.686 3-6 3z' },
     { href: '/admin-pedidos', label: 'Pedidos', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
+    { href: '/admin-cotizaciones-invitado', label: 'Cotiz. invitados', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
     { href: '/admin-publicidad', label: 'Publicidad', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
+    { href: '/admin-equipo', label: 'Equipo desarrollo', iconImage: '/Imagenes/icon_equipo.png' },
     { href: '/admin-productos-manuales', label: 'Productos manuales', icon: 'M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { href: '/admin-gestion-usuarios', label: 'Gestionar usuarios', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
 ]
@@ -82,7 +85,20 @@ export default function AdminLayout({ children }) {
                 sidebarOpen ? 'w-64' : 'w-20'
             } ${darkMode ? 'bg-gray-800 border-r border-gray-700' : 'bg-white border-r border-gray-200'}`}>
                 <div className={`flex items-center justify-between h-16 px-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    {sidebarOpen && <span className="font-bold text-emerald-400">Panel Admin</span>}
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Image
+                            src="/Imagenes/logo_en.png"
+                            alt="Todo para oficina"
+                            width={30}
+                            height={30}
+                            className="w-7 h-7 object-contain shrink-0"
+                        />
+                        {sidebarOpen && (
+                            <span className="font-bold text-emerald-400 truncate">
+                                Todo para oficina
+                            </span>
+                        )}
+                    </div>
                     <button onClick={() => setSidebarOpen((s) => !s)} className="p-2 rounded hover:bg-gray-700">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -90,22 +106,70 @@ export default function AdminLayout({ children }) {
                     </button>
                 </div>
                 <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
-                    {navItems.map((item) => (
+                    {navItems.map((item) => {
+                        const active = pathname === item.href
+                        const gananciaClass =
+                            item.gananciaIcon && !active
+                                ? darkMode
+                                    ? ''
+                                    : 'text-emerald-600'
+                                : ''
+                        return (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-colors ${
-                                pathname === item.href
+                                active
                                     ? 'bg-emerald-600 text-white'
                                     : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                             }`}
                         >
-                            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                            </svg>
+                            {item.gananciaIcon ? (
+                                <span className={`w-5 h-5 shrink-0 inline-flex items-center justify-center ${gananciaClass}`}>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden>
+                                        <path d="M3 3v18h18" />
+                                        <path d="M7 12l4-4 4 4 4-6" />
+                                        <path d="M21 9v6" />
+                                    </svg>
+                                </span>
+                            ) : item.iconImage ? (
+                                active ? (
+                                    <span
+                                        className="inline-flex shrink-0 items-center justify-center rounded-lg bg-emerald-950/55 p-0.5 ring-1 ring-emerald-400/25"
+                                        aria-hidden
+                                    >
+                                        <Image
+                                            src={item.iconImage}
+                                            alt=""
+                                            width={20}
+                                            height={20}
+                                            className="h-5 w-5 object-contain"
+                                            style={{
+                                                filter:
+                                                    'brightness(0) saturate(100%) invert(84%) sepia(31%) saturate(638%) hue-rotate(93deg)',
+                                            }}
+                                        />
+                                    </span>
+                                ) : (
+                                    <Image
+                                        src={item.iconImage}
+                                        alt=""
+                                        width={20}
+                                        height={20}
+                                        className={`h-5 w-5 shrink-0 object-contain ${
+                                            darkMode ? 'brightness-0 invert opacity-80' : 'opacity-90'
+                                        }`}
+                                    />
+                                )
+                            ) : (
+                                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                                </svg>
+                            )}
                             {sidebarOpen && <span>{item.label}</span>}
                         </Link>
-                    ))}
+                        )
+                    })}
                 </nav>
             </aside>
 
@@ -131,7 +195,7 @@ export default function AdminLayout({ children }) {
                                     }
                                 }}
                                 className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
-                                    darkMode ? 'bg-blue-600' : 'bg-gray-300'
+                                    darkMode ? 'bg-emerald-600' : 'bg-gray-300'
                                 }`}
                                 aria-label="Modo oscuro / claro"
                             >

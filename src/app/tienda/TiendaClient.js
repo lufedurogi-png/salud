@@ -788,7 +788,25 @@ export default function TiendaClient({ initialData = {} }) {
                 darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
             }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {/* Franja superior con solo logo */}
+                    <div className={`pb-10 border-b px-2 ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                        <div className="flex justify-center items-center">
+                            <div className="flex justify-center sm:col-span-1 lg:col-span-1 lg:justify-self-center">
+                                <Link href="/" className="shrink-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF8000] p-2 flex items-center">
+                                    <Image
+                                        src="/Imagenes/logo_nxtIt.png"
+                                        alt="NXT.IT"
+                                        width={220}
+                                        height={72}
+                                        className="h-12 sm:h-14 md:h-16 w-auto object-contain opacity-95 hover:opacity-100 transition-opacity"
+                                    />
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Debajo: columnas de texto */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
                         {/* Información de Contacto */}
                         <div>
                             <div className="flex items-center gap-3 mb-4">
@@ -855,6 +873,13 @@ export default function TiendaClient({ initialData = {} }) {
                             }`}>
                                 Sobre nosotros
                             </h3>
+                            <Link
+                                href="/desarrolladores"
+                                className="inline-flex items-center gap-1 text-sm font-bold tracking-wide hover:text-[#FF8000] transition-colors mb-3"
+                            >
+                                <span className="text-[#FF8000]">Equipo</span>
+                                <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>de desarrollo</span>
+                            </Link>
                             <p className={`text-sm leading-relaxed ${
                                 darkMode ? 'text-gray-300' : 'text-gray-700'
                             }`}>

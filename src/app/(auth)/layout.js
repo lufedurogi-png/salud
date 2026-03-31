@@ -5,13 +5,19 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 const Layout = ({ children }) => {
-    const [darkMode, setDarkMode] = useState(() => {
-        if (typeof window !== 'undefined') {
+    // Mismo valor en servidor y primer render cliente (evita error de hidratación); se sincroniza con localStorage al montar.
+    const [darkMode, setDarkMode] = useState(true)
+
+    useEffect(() => {
+        try {
             const saved = localStorage.getItem('darkMode')
-            return saved !== null ? JSON.parse(saved) : true
+            if (saved !== null) {
+                setDarkMode(JSON.parse(saved))
+            }
+        } catch {
+            // ignorar
         }
-        return true
-    })
+    }, [])
 
     useEffect(() => {
         if (darkMode) {
@@ -43,10 +49,10 @@ const Layout = ({ children }) => {
             }`} style={{ height: '4rem' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
-                        <Link href="/" className="flex items-center">
+                        <Link href="/tienda" className="flex items-center">
                             <Image
                                 src="/Imagenes/logo_en.png"
-                                alt="NXT.IT"
+                                alt="Todo para oficina"
                                 width={120}
                                 height={40}
                                 className="h-8 w-auto"

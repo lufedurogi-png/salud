@@ -247,6 +247,30 @@ export async function getFiltrosDinamicos(categoria, subcategoria, opts = {}) {
 }
 
 /**
+ * Filtros dinámicos para resultados de búsqueda (misma cascada que subcategoría; API: ?q=...).
+ */
+export async function getFiltrosDinamicosBusqueda(query, opts = {}) {
+    const q = typeof query === 'string' ? query.trim() : ''
+    if (!q) return {}
+    try {
+        const params = { q }
+        if (opts.marca) params.marca = opts.marca
+        if (opts.precioMin != null) params.precio_min = opts.precioMin
+        if (opts.precioMax != null) params.precio_max = opts.precioMax
+        if (opts.filtros && Object.keys(opts.filtros).length > 0) {
+            Object.entries(opts.filtros).forEach(([k, v]) => {
+                if (v != null && String(v).trim() !== '') params[`filtros[${k}]`] = v
+            })
+        }
+        const { data } = await axios.get('/catalogos/filtros-dinamicos', { params })
+        if (data?.success && data?.data && typeof data.data === 'object') return data.data
+    } catch {
+        // ignore
+    }
+    return {}
+}
+
+/**
  * Claves de productos vistos recientemente. Por usuario o visitante (userId = user?.id ?? guestId).
  */
 export function getVistosRecientesClaves(userId) {

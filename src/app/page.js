@@ -9,6 +9,33 @@ const Home = () => {
     const { user, logout } = useAuth({ middleware: 'guest' })
     const [userDropdownOpen, setUserDropdownOpen] = useState(false)
 
+    // Pestaña: título y favicon solo en / (evita layout anidado con metadata que en algunos entornos rompe CSS en el resto de rutas)
+    useEffect(() => {
+        const prevTitle = document.title
+        document.title = 'Next.It'
+        const iconSelectors = [
+            'link[rel="icon"]',
+            'link[rel="shortcut icon"]',
+            'link[rel="apple-touch-icon"]',
+        ]
+        const snapshots = iconSelectors
+            .map((sel) => {
+                const el = document.querySelector(sel)
+                if (!el) return null
+                return { el, href: el.getAttribute('href') }
+            })
+            .filter(Boolean)
+        snapshots.forEach(({ el }) => {
+            el.setAttribute('href', '/Imagenes/logo_nxtIt.png')
+        })
+        return () => {
+            document.title = prevTitle || 'Todo para oficina'
+            snapshots.forEach(({ el, href }) => {
+                el.setAttribute('href', href || '/Imagenes/logo_en.png')
+            })
+        }
+    }, [])
+
     // Cerrar dropdown al hacer clic fuera
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -36,10 +63,10 @@ const Home = () => {
             <header className="fixed top-0 left-0 right-0 z-50 bg-gray-950/70 backdrop-blur-sm border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
-                        <Link href="/" className="flex items-center">
+                        <Link href="/" className="flex items-center gap-2 sm:gap-3">
                             <Image
                                 src="/Imagenes/logo_nxtIt.png"
-                                alt="NXT.IT"
+                                alt="nxt.it"
                                 width={120}
                                 height={40}
                                 className="h-8 w-auto"
@@ -128,10 +155,22 @@ const Home = () => {
             {/* Hero mitad y mitad */}
             <main className="pt-16">
                 <section className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row">
-                    <div className="md:w-1/2 bg-gray-950 p-10 flex flex-col justify-center relative overflow-hidden">
+                    <div className="md:w-2/3 bg-gray-950 p-10 flex flex-col justify-center relative overflow-hidden">
+                        <video
+                            className="absolute inset-0 w-full h-full object-cover"
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            aria-hidden="true"
+                        >
+                            <source src="/Imagenes/Video1.mp4" type="video/mp4" />
+                        </video>
+                        <div className="absolute inset-0 bg-black/45" />
                         <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_20%_20%,rgba(255,128,0,0.35),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(0,176,255,0.25),transparent_50%)]" />
 
-                        <div className="relative">
+                        <div className="relative z-10">
                             <Image
                                 src="/Imagenes/logo_nxtIt.png"
                                 alt="NXT.IT"
@@ -167,8 +206,8 @@ const Home = () => {
                         </div>
                     </div>
 
-                    <div className="md:w-1/2 bg-white text-gray-900 p-10 flex flex-col justify-center">
-                        <div className="max-w-xl mx-auto w-full">
+                    <div className="md:w-1/3 bg-white text-gray-900 p-10 flex flex-col justify-center">
+                        <div className="max-w-lg mx-auto w-full">
                             <p className="text-sm font-bold tracking-widest text-[#FF8000] uppercase">
                                 Compromiso y experiencia
                             </p>

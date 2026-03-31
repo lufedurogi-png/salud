@@ -35,7 +35,12 @@ const RootLayout = ({ children }) => {
 }
 
 export const metadata = {
-    title: 'Laravel',
+    title: 'Todo para oficina',
+    icons: {
+        icon: '/Imagenes/logo_en.png',
+        shortcut: '/Imagenes/logo_en.png',
+        apple: '/Imagenes/logo_en.png',
+    },
 }
 
 export default RootLayout

@@ -23,6 +23,7 @@ const RANGOS_PRECIO = [
 function parseUrlFilters(urlFilters = {}) {
     const marca = urlFilters.marca ?? ''
     const precio = urlFilters.precio ?? ''
+    const stock = urlFilters.stock ?? ''
     let filtros = {}
     try {
         if (urlFilters.filtros && typeof urlFilters.filtros === 'string') {
@@ -31,7 +32,7 @@ function parseUrlFilters(urlFilters = {}) {
     } catch {
         //
     }
-    return { marca, precio, filtros }
+    return { marca, precio, stock, filtros }
 }
 
 export default function VistaSubcategoriaClient({ categoria, subcategoria, initialData = {}, urlFilters = {} }) {
@@ -53,6 +54,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
     const [selectedMarca, setSelectedMarca] = useState(() => parsed.marca)
     const [orden, setOrden] = useState('reciente')
     const [rangoPrecio, setRangoPrecio] = useState(() => parsed.precio)
+    const [stockFiltro, setStockFiltro] = useState(() => parsed.stock)
     const [filtrosDinamicos, setFiltrosDinamicos] = useState({})
     const [filtrosDinamicosSeleccionados, setFiltrosDinamicosSeleccionados] = useState(() => parsed.filtros)
     const [compararSeleccionados, setCompararSeleccionados] = useState([])
@@ -108,10 +110,11 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
     }, [categoria, subcategoria])
 
     // Sincronizar estado con URL cuando vuelves desde producto (navegación con filtros en query)
-    const parsedKey = `${parsed.marca}|${parsed.precio}|${JSON.stringify(parsed.filtros)}`
+    const parsedKey = `${parsed.marca}|${parsed.precio}|${parsed.stock}|${JSON.stringify(parsed.filtros)}`
     useEffect(() => {
         setSelectedMarca(parsed.marca)
         setRangoPrecio(parsed.precio)
+        setStockFiltro(parsed.stock)
         setFiltrosDinamicosSeleccionados(parsed.filtros)
     }, [parsedKey])
 
@@ -119,6 +122,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
         const params = new URLSearchParams()
         if (selectedMarca) params.set('marca', selectedMarca)
         if (rangoPrecio) params.set('precio', rangoPrecio)
+        if (stockFiltro) params.set('stock', stockFiltro)
         const fActivos = Object.fromEntries(
             Object.entries(filtrosDinamicosSeleccionados).filter(([, v]) => v != null && String(v).trim() !== '')
         )
@@ -128,14 +132,14 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
         const qs = params.toString()
         const url = qs ? `${pathname}?${qs}` : pathname
         router.replace(url, { scroll: false })
-    }, [pathname, router, selectedMarca, rangoPrecio, filtrosDinamicosSeleccionados])
+    }, [pathname, router, selectedMarca, rangoPrecio, stockFiltro, filtrosDinamicosSeleccionados])
 
     useEffect(() => {
         actualizarUrl()
-    }, [selectedMarca, rangoPrecio, filtrosDinamicosSeleccionados])
+    }, [selectedMarca, rangoPrecio, stockFiltro, filtrosDinamicosSeleccionados])
 
     const productosKeyRaw = categoria
-        ? ['subcategoria-productos', categoria, subcategoria, isVerTodo, selectedMarca, orden, rangoPrecio, rango?.min, rango?.max, JSON.stringify(filtrosActivos)]
+        ? ['subcategoria-productos', categoria, subcategoria, isVerTodo, selectedMarca, orden, rangoPrecio, stockFiltro, rango?.min, rango?.max, JSON.stringify(filtrosActivos)]
         : null
     const productosKeyStr = productosKeyRaw ? JSON.stringify(productosKeyRaw) : ''
     const [productosKeyDebounced, setProductosKeyDebounced] = useState(() => productosKeyRaw)
@@ -165,25 +169,37 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
         {
             revalidateOnFocus: false,
             dedupingInterval: 15000,
-            fallbackData: !selectedMarca && orden === 'reciente' && !rangoPrecio && Object.keys(filtrosActivos).length === 0 && initialData?.productos ? initialData.productos : undefined,
-            revalidateOnMount: !(!selectedMarca && orden === 'reciente' && !rangoPrecio && Object.keys(filtrosActivos).length === 0 && initialData?.productos),
+            fallbackData: !selectedMarca && orden === 'reciente' && !rangoPrecio && !stockFiltro && Object.keys(filtrosActivos).length === 0 && initialData?.productos ? initialData.productos : undefined,
+            revalidateOnMount: !(!selectedMarca && orden === 'reciente' && !rangoPrecio && !stockFiltro && Object.keys(filtrosActivos).length === 0 && initialData?.productos),
         }
     )
     const productos = productosData ?? []
+    const productosFiltradosPorStock = useMemo(() => {
+        if (!Array.isArray(productos)) return []
+        if (!stockFiltro) return productos
+
+        return productos.filter((producto) => {
+            const totalStock = Number(producto?.disponible || 0) + Number(producto?.disponible_cd || 0)
+            if (stockFiltro === 'con_stock') return totalStock > 0
+            if (stockFiltro === 'sin_stock') return totalStock <= 0
+            return true
+        })
+    }, [productos, stockFiltro])
 
     useEffect(() => {
-        if (productos.length > 0) setProductosAnteriores(productos)
-    }, [productos])
+        if (productosFiltradosPorStock.length > 0) setProductosAnteriores(productosFiltradosPorStock)
+    }, [productosFiltradosPorStock])
 
     const productosAMostrar = loading && productos.length === 0 && productosAnteriores.length > 0
         ? productosAnteriores
-        : productos
+        : productosFiltradosPorStock
 
     const tituloSubcategoria = isVerTodo ? 'Ver todo' : subcategoria
 
     const paramsParaUrl = new URLSearchParams()
     if (selectedMarca) paramsParaUrl.set('marca', selectedMarca)
     if (rangoPrecio) paramsParaUrl.set('precio', rangoPrecio)
+    if (stockFiltro) paramsParaUrl.set('stock', stockFiltro)
     const fAct = Object.fromEntries(
         Object.entries(filtrosDinamicosSeleccionados).filter(([, v]) => v != null && String(v).trim() !== '')
     )
@@ -218,6 +234,27 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                                 <option value="reciente">Más recientes</option>
                                 <option value="precio_asc">Precio: menor a mayor</option>
                                 <option value="precio_desc">Precio: mayor a menor</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <h3 className={`text-sm font-bold uppercase mb-4 ${
+                                darkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                                STOCK
+                            </h3>
+                            <select
+                                value={stockFiltro}
+                                onChange={(e) => setStockFiltro(e.target.value)}
+                                className={`w-full px-4 py-2 rounded-lg border text-sm ${
+                                    darkMode
+                                        ? 'bg-gray-700 border-gray-600 text-white'
+                                        : 'bg-white border-gray-300 text-gray-900'
+                                }`}
+                            >
+                                <option value="">Todos</option>
+                                <option value="con_stock">Con stock</option>
+                                <option value="sin_stock">Sin stock</option>
                             </select>
                         </div>
 

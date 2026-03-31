@@ -7,14 +7,41 @@ import Input from '@/components/Input'
 import Label from '@/components/Label'
 import { getPaginationWindow } from '@/lib/pagination'
 import { useDebounce } from '@/hooks/useDebounce'
+import {
+    adminMainCardClass,
+    adminTableShellClass,
+    adminTableHeadRowClass,
+    adminFilterSelectClass,
+    adminFilterInputClass,
+    adminFilterDateInputClass,
+    adminColumnTitleClass,
+    adminColumnTitleDotClass,
+    adminDateFieldBoxClass,
+    adminDateLabelClass,
+    adminPageIconWrapClass,
+    adminPageTitleClass,
+    adminPageSubtitleClass,
+    adminTitleAccentBarClass,
+    adminToolbarSelectClass,
+} from '@/lib/adminUi'
 
 const PER_PAGE_OPTIONS = [5, 10, 25, 50]
+
+const METODO_PAGO_FILTRO_OPTIONS = [
+    { value: 'todos', label: 'Todos' },
+    { value: 'paypal', label: 'PayPal' },
+    { value: 'MercadoPago', label: 'Mercado Pago' },
+    { value: 'Transferencia', label: 'Transferencia' },
+    { value: 'Tarjeta', label: 'Tarjeta' },
+    { value: 'Efectivo', label: 'Efectivo' },
+]
 
 export default function AdminPedidosPage() {
     const [darkMode, setDarkMode] = useState(true)
     const [fechaDesde, setFechaDesde] = useState('')
     const [fechaHasta, setFechaHasta] = useState('')
     const [pagoFiltro, setPagoFiltro] = useState('todos')
+    const [metodoPagoFiltro, setMetodoPagoFiltro] = useState('todos')
     const [estatusFiltro, setEstatusFiltro] = useState('todos')
     const [folioBusqueda, setFolioBusqueda] = useState('')
     const [clienteBusqueda, setClienteBusqueda] = useState('')
@@ -51,6 +78,7 @@ export default function AdminPedidosPage() {
                 if (fechaDesde) params.set('fecha_desde', fechaDesde)
                 if (fechaHasta) params.set('fecha_hasta', fechaHasta)
                 if (pagoFiltro !== 'todos') params.set('pago', pagoFiltro)
+                if (metodoPagoFiltro !== 'todos') params.set('metodo_pago', metodoPagoFiltro)
                 if (estatusFiltro !== 'todos') params.set('estatus', estatusFiltro)
                 if (folioBusqueda.trim()) params.set('folio', folioBusqueda.trim())
                 if (debouncedCliente.trim()) params.set('cliente', debouncedCliente.trim())
@@ -72,7 +100,7 @@ export default function AdminPedidosPage() {
                 if (!silent) setLoadingPedidos(false)
             }
         },
-        [fechaDesde, fechaHasta, pagoFiltro, estatusFiltro, folioBusqueda, debouncedCliente, registrosPorPagina, paginaActual]
+        [fechaDesde, fechaHasta, pagoFiltro, metodoPagoFiltro, estatusFiltro, folioBusqueda, debouncedCliente, registrosPorPagina, paginaActual]
     )
 
     useEffect(() => {
@@ -81,7 +109,7 @@ export default function AdminPedidosPage() {
 
     useEffect(() => {
         setPaginaActual(1)
-    }, [fechaDesde, fechaHasta, pagoFiltro, estatusFiltro, folioBusqueda, debouncedCliente, registrosPorPagina])
+    }, [fechaDesde, fechaHasta, pagoFiltro, metodoPagoFiltro, estatusFiltro, folioBusqueda, debouncedCliente, registrosPorPagina])
 
     useEffect(() => {
         if (detallePedidoId == null) {
@@ -116,140 +144,38 @@ export default function AdminPedidosPage() {
 
     const { pedidos, total, per_page, current_page, last_page } = pedidosData
 
+    const columnTitle = (label) => (
+        <div className={`${adminColumnTitleClass(darkMode)} inline-flex items-center`}>
+            <span className={adminColumnTitleDotClass(darkMode)} aria-hidden />
+            {label}
+        </div>
+    )
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
+            <div className="flex items-start gap-4">
+                <span className={adminPageIconWrapClass(darkMode)}>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                     </svg>
                 </span>
                 <div>
-                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                        Estado de pedidos
-                    </h1>
-                    <p className={`text-sm mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <h1 className={adminPageTitleClass(darkMode)}>Estado de pedidos</h1>
+                    <div className={adminTitleAccentBarClass(darkMode)} aria-hidden />
+                    <p className={adminPageSubtitleClass(darkMode)}>
                         Consulta y filtra los pedidos de todos los clientes por estado, fechas y cliente.
                     </p>
                 </div>
             </div>
 
-            <div
-                className={`rounded-xl border p-6 transition-colors ${
-                    darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'
-                }`}
-            >
-                {/* Filtros */}
-                <div className="mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                        <div>
-                            <Label className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Desde</Label>
-                            <Input
-                                type="date"
-                                value={fechaDesde}
-                                onChange={(e) => setFechaDesde(e.target.value)}
-                                className={`mt-1 w-full rounded-lg border ${
-                                    fechaDesde
-                                        ? 'bg-[#E5EBFD] border-blue-300 text-gray-900'
-                                        : darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300'
-                                }`}
-                            />
-                        </div>
-                        <div>
-                            <Label className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Hasta</Label>
-                            <Input
-                                type="date"
-                                value={fechaHasta}
-                                onChange={(e) => setFechaHasta(e.target.value)}
-                                className={`mt-1 w-full rounded-lg border ${
-                                    fechaHasta
-                                        ? 'bg-[#E5EBFD] border-blue-300 text-gray-900'
-                                        : darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300'
-                                }`}
-                            />
-                        </div>
-                        <div>
-                            <Label className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Pago</Label>
-                            <select
-                                value={pagoFiltro}
-                                onChange={(e) => setPagoFiltro(e.target.value)}
-                                className={`mt-1 w-full px-3 py-2 rounded-lg border ${
-                                    pagoFiltro !== 'todos'
-                                        ? 'bg-[#E5EBFD] border-blue-300 text-gray-900'
-                                        : darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300'
-                                }`}
-                            >
-                                <option value="todos">Todos</option>
-                                <option value="pagado">Pagado</option>
-                                <option value="pendiente">Pendiente</option>
-                            </select>
-                        </div>
-                        <div>
-                            <Label className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Estatus</Label>
-                            <select
-                                value={estatusFiltro}
-                                onChange={(e) => setEstatusFiltro(e.target.value)}
-                                className={`mt-1 w-full px-3 py-2 rounded-lg border ${
-                                    estatusFiltro !== 'todos'
-                                        ? 'bg-[#E5EBFD] border-blue-300 text-gray-900'
-                                        : darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300'
-                                }`}
-                            >
-                                <option value="todos">Todos</option>
-                                <option value="completado">Completado</option>
-                                <option value="en_proceso">En proceso</option>
-                                <option value="cancelado">Cancelado</option>
-                            </select>
-                        </div>
-                        <div>
-                            <Label className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Folio</Label>
-                            <Input
-                                type="text"
-                                placeholder="Número de folio"
-                                value={folioBusqueda}
-                                onChange={(e) => setFolioBusqueda(e.target.value)}
-                                className={`mt-1 w-full rounded-lg border ${
-                                    folioBusqueda.trim()
-                                        ? 'bg-[#E5EBFD] border-blue-300 text-gray-900'
-                                        : darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 placeholder-gray-500'
-                                }`}
-                            />
-                        </div>
-                        <div>
-                            <Label className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Cliente</Label>
-                            <Input
-                                type="text"
-                                placeholder="Nombre o email"
-                                value={clienteBusqueda}
-                                onChange={(e) => setClienteBusqueda(e.target.value)}
-                                className={`mt-1 w-full rounded-lg border ${
-                                    clienteBusqueda.trim()
-                                        ? 'bg-[#E5EBFD] border-blue-300 text-gray-900'
-                                        : darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 placeholder-gray-500'
-                                }`}
-                            />
-                        </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap items-center gap-4">
-                        <Label className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Mostrar</Label>
+            <div className={adminMainCardClass(darkMode)}>
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b pb-4 border-emerald-500/15 dark:border-emerald-500/20">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Label className={darkMode ? 'text-emerald-200/90' : 'text-emerald-800/90'}>Mostrar</Label>
                         <select
                             value={registrosPorPagina}
                             onChange={(e) => setRegistrosPorPagina(Number(e.target.value))}
-                            className={`px-3 py-2 rounded-lg border text-sm ${
-                                darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                            }`}
+                            className={adminToolbarSelectClass(darkMode)}
                         >
                             {PER_PAGE_OPTIONS.map((n) => (
                                 <option key={n} value={n}>
@@ -257,46 +183,84 @@ export default function AdminPedidosPage() {
                                 </option>
                             ))}
                         </select>
-                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {total} pedido{total !== 1 ? 's' : ''} en total
-                        </span>
                     </div>
+                    <span className={`text-sm font-medium ${darkMode ? 'text-emerald-200/70' : 'text-emerald-800/80'}`}>
+                        {total} pedido{total !== 1 ? 's' : ''} en total
+                    </span>
                 </div>
 
-                {/* Tabla */}
-                <div className="overflow-x-auto rounded-lg border border-gray-600/50 dark:border-gray-600">
-                    <table className="w-full min-w-[800px]">
+                {/* Tabla con filtros integrados en el encabezado */}
+                <div className={adminTableShellClass(darkMode)}>
+                    <table className="w-full min-w-[1150px]">
                         <thead>
-                            <tr
-                                className={
-                                    darkMode
-                                        ? 'border-b border-gray-700 bg-gray-700/50'
-                                        : 'border-b border-gray-200 bg-gray-50'
-                                }
-                            >
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Fecha
+                            <tr className={adminTableHeadRowClass(darkMode)}>
+                                <th className={`px-3 py-3.5 text-left min-w-[260px] sm:min-w-[280px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Fecha')}
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2">
+                                        <div className={adminDateFieldBoxClass(darkMode, !!fechaDesde)}>
+                                            <label htmlFor="filtro-fecha-desde" className={adminDateLabelClass(darkMode)}>
+                                                A partir de
+                                            </label>
+                                            <Input
+                                                id="filtro-fecha-desde"
+                                                type="date"
+                                                value={fechaDesde}
+                                                onChange={(e) => setFechaDesde(e.target.value)}
+                                                className={adminFilterDateInputClass(darkMode, !!fechaDesde, 'mt-0 py-1.5')}
+                                            />
+                                        </div>
+                                        <div className={adminDateFieldBoxClass(darkMode, !!fechaHasta)}>
+                                            <label htmlFor="filtro-fecha-hasta" className={adminDateLabelClass(darkMode)}>
+                                                Hasta
+                                            </label>
+                                            <Input
+                                                id="filtro-fecha-hasta"
+                                                type="date"
+                                                value={fechaHasta}
+                                                onChange={(e) => setFechaHasta(e.target.value)}
+                                                className={adminFilterDateInputClass(darkMode, !!fechaHasta, 'mt-0 py-1.5')}
+                                            />
+                                        </div>
+                                    </div>
                                 </th>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Folio
+                                <th className={`px-3 py-3.5 text-left min-w-[110px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Folio')}
+                                    <Input type="text" placeholder="Folio" value={folioBusqueda} onChange={(e) => setFolioBusqueda(e.target.value)} className={adminFilterInputClass(darkMode, !!folioBusqueda.trim())} />
                                 </th>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Cliente
+                                <th className={`px-3 py-3.5 text-left min-w-[140px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Cliente')}
+                                    <Input type="text" placeholder="Nombre o email" value={clienteBusqueda} onChange={(e) => setClienteBusqueda(e.target.value)} className={adminFilterInputClass(darkMode, !!clienteBusqueda.trim())} />
                                 </th>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Monto
+                                <th className={`px-3 py-3.5 text-left w-[72px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Monto')}
                                 </th>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Método de pago
+                                <th className={`px-3 py-3.5 text-left min-w-[130px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Método pago')}
+                                    <select value={metodoPagoFiltro} onChange={(e) => setMetodoPagoFiltro(e.target.value)} className={adminFilterSelectClass(darkMode, metodoPagoFiltro !== 'todos')}>
+                                        {METODO_PAGO_FILTRO_OPTIONS.map((o) => (
+                                            <option key={o.value} value={o.value}>{o.label}</option>
+                                        ))}
+                                    </select>
                                 </th>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Pago
+                                <th className={`px-3 py-3.5 text-left min-w-[118px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Pago')}
+                                    <select value={pagoFiltro} onChange={(e) => setPagoFiltro(e.target.value)} className={adminFilterSelectClass(darkMode, pagoFiltro !== 'todos')}>
+                                        <option value="todos">Todos</option>
+                                        <option value="pagado">Pagado</option>
+                                        <option value="pendiente">Pendiente</option>
+                                    </select>
                                 </th>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Estatus
+                                <th className={`px-3 py-3.5 text-left min-w-[124px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Estatus')}
+                                    <select value={estatusFiltro} onChange={(e) => setEstatusFiltro(e.target.value)} className={adminFilterSelectClass(darkMode, estatusFiltro !== 'todos')}>
+                                        <option value="todos">Todos</option>
+                                        <option value="completado">Completado</option>
+                                        <option value="en_proceso">En proceso</option>
+                                        <option value="cancelado">Cancelado</option>
+                                    </select>
                                 </th>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    Acciones
+                                <th className={`px-3 py-3.5 text-left min-w-[88px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    {columnTitle('Acciones')}
                                 </th>
                             </tr>
                         </thead>

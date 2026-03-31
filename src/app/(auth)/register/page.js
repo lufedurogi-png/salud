@@ -5,10 +5,10 @@ import Button from '@/components/Button'
 import Input from '@/components/Input'
 import InputError from '@/components/InputError'
 import Label from '@/components/Label'
-import Link from 'next/link'
 import { useAuth } from '@/hooks/auth'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { PrivacyNoticeModal } from '@/components/PrivacyNoticeReader'
 
 const Page = () => {
     const router = useRouter()
@@ -26,18 +26,25 @@ const Page = () => {
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [remember, setRemember] = useState(false)
+    const [privacyAccepted, setPrivacyAccepted] = useState(false)
+    const [privacyModalOpen, setPrivacyModalOpen] = useState(false)
     const [errors, setErrors] = useState([])
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
 
-    const [darkMode, setDarkMode] = useState(() => {
-        if (typeof window !== 'undefined') {
+    const [darkMode, setDarkMode] = useState(true)
+
+    useEffect(() => {
+        try {
             const saved = localStorage.getItem('darkMode')
-            return saved !== null ? JSON.parse(saved) : true
+            if (saved !== null) {
+                setDarkMode(JSON.parse(saved))
+            }
+        } catch {
+            // ignorar
         }
-        return true
-    })
+    }, [])
 
     useEffect(() => {
         if (darkMode) {
@@ -107,6 +114,10 @@ const Page = () => {
     const submitForm = event => {
         event.preventDefault()
 
+        if (!privacyAccepted) {
+            setErrors({ general: ['Debes aceptar el aviso de privacidad para registrarte.'] })
+            return
+        }
         register({
             name,
             email,
@@ -119,26 +130,30 @@ const Page = () => {
 
     return (
         <div className="relative w-full flex-1 flex flex-col min-h-0 h-full" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+            <PrivacyNoticeModal darkMode={darkMode} open={privacyModalOpen} onClose={() => setPrivacyModalOpen(false)} />
+
             {/* Contenedor principal: desplazado a la derecha en lg+ para que se vea más centrado en la página */}
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 w-full max-w-[1920px] mx-auto relative lg:pl-[14vw] xl:pl-[18vw] 2xl:pl-[22vw]">
-                {/* Lado izquierdo - Formulario de Registro */}
-                <div className={`flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:px-12 xl:px-16 2xl:px-24 transition-all duration-300 ease-out min-w-0 order-2 lg:order-1 lg:min-w-0 lg:max-w-[60%] xl:max-w-[55%] mt-40 sm:mt-56 md:mt-64 lg:mt-0 ${
+                {/* Lado izquierdo - Formulario de Registro (mismo ancho efectivo que la franja naranja: max-w-md + padding) */}
+                <div className={`flex-1 flex items-start justify-center p-4 pt-6 sm:p-6 sm:pt-10 md:pt-12 lg:flex lg:items-center lg:p-8 lg:px-10 xl:px-14 2xl:px-20 transition-all duration-300 ease-out min-w-0 order-2 lg:order-1 lg:min-w-0 lg:max-w-[60%] xl:max-w-[55%] mt-4 sm:mt-8 md:mt-10 lg:mt-0 ${
                     (showPasswordModal || showConfirmModal) ? 'pr-44 sm:pr-48 lg:pr-52 z-[50]' : ''
                 } ${
                     isExpanded ? 'opacity-0 translate-x-full lg:translate-x-0 lg:opacity-0' : 'opacity-100 translate-x-0'
                 } ${
                     darkMode ? 'bg-gray-900' : 'bg-gray-50'
                 }`}>
-                    {/* Espaciadores en lg+: más espacio a la izquierda para que el formulario quede centrado en la vista */}
-                    <div className="hidden lg:block flex-[28] min-w-0" aria-hidden />
-                    <div className="w-full max-w-md shrink-0 -mt-[7cm]">
-                        <h2 className={`text-2xl sm:text-3xl md:text-4xl font-bold mb-6 md:mb-8 ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                        }`}>
-                            Registro
-                        </h2>
+                    <div className="mx-auto w-full max-w-md shrink-0 self-start lg:mx-auto lg:w-full lg:max-w-[720px]">
+                        <div className="w-full">
+                            <h2
+                                className={`mb-6 w-full text-2xl font-bold sm:text-3xl md:mb-8 md:text-4xl lg:mb-6 ${
+                                    darkMode ? 'text-white' : 'text-gray-900'
+                                }`}
+                            >
+                                Registro
+                            </h2>
 
-                        <form onSubmit={submitForm} className="space-y-4 sm:space-y-5">
+                        <form onSubmit={submitForm} className="contents">
+                            <div className="space-y-4 sm:space-y-5 lg:min-w-0">
                             {/* Name */}
                             <div>
                                 <Label htmlFor="name" className={`text-sm font-medium mb-1.5 block ${darkMode ? 'text-white' : 'text-gray-700'}`}>
@@ -381,29 +396,71 @@ const Page = () => {
                                 </div>
                                 <InputError messages={errors.password_confirmation} className="mt-1.5" />
                             </div>
-
-                            {/* Remember Me */}
-                            <div className="block">
-                                <label
-                                    htmlFor="remember"
-                                    className={`inline-flex items-center cursor-pointer ${
-                                        darkMode ? 'text-white' : 'text-gray-700'
-                                    }`}>
-                                    <input
-                                        id="remember"
-                                        type="checkbox"
-                                        name="remember"
-                                        className={`rounded border-gray-300 text-[#FF8000] shadow-sm focus:border-[#FF8000] focus:ring focus:ring-[#FF8000] focus:ring-opacity-50 ${
-                                            darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white'
-                                        }`}
-                                        checked={remember}
-                                        onChange={event => setRemember(event.target.checked)}
-                                    />
-                                    <span className="ml-2 text-sm">
-                                        Recordarme
-                                    </span>
-                                </label>
                             </div>
+
+                            <div className="space-y-4 lg:min-w-0">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+                                    <label
+                                        htmlFor="remember"
+                                        className={`inline-flex shrink-0 cursor-pointer items-center ${
+                                            darkMode ? 'text-white' : 'text-gray-700'
+                                        }`}
+                                    >
+                                        <input
+                                            id="remember"
+                                            type="checkbox"
+                                            name="remember"
+                                            className={`rounded border-gray-300 text-[#FF8000] shadow-sm focus:border-[#FF8000] focus:ring focus:ring-[#FF8000] focus:ring-opacity-50 ${
+                                                darkMode ? 'border-gray-600 bg-gray-800' : 'bg-white'
+                                            }`}
+                                            checked={remember}
+                                            onChange={(event) => setRemember(event.target.checked)}
+                                        />
+                                        <span className="ml-2 text-sm">Recordarme</span>
+                                    </label>
+                                    <div className="flex min-w-0 flex-1 items-start gap-2">
+                                        <input
+                                            id="privacy_accept"
+                                            type="checkbox"
+                                            className={`mt-0.5 shrink-0 rounded border-gray-300 text-[#FF8000] shadow-sm focus:border-[#FF8000] focus:ring focus:ring-[#FF8000] focus:ring-opacity-50 ${
+                                                darkMode ? 'border-gray-600 bg-gray-800' : 'bg-white'
+                                            }`}
+                                            checked={privacyAccepted}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked
+                                                setPrivacyAccepted(checked)
+                                                if (checked) {
+                                                    setPrivacyModalOpen(true)
+                                                }
+                                            }}
+                                        />
+                                        <label
+                                            htmlFor="privacy_accept"
+                                            className={`cursor-pointer text-sm leading-snug ${darkMode ? 'text-white' : 'text-gray-700'}`}
+                                        >
+                                            Confirmo que he leído el{' '}
+                                            <span
+                                                role="button"
+                                                tabIndex={0}
+                                                className="font-semibold text-[#FF8000] hover:underline"
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    setPrivacyModalOpen(true)
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        setPrivacyModalOpen(true)
+                                                    }
+                                                }}
+                                            >
+                                                aviso de privacidad
+                                            </span>
+                                            .
+                                        </label>
+                                    </div>
+                                </div>
 
                             {/* Error general */}
                             {errors.general && (
@@ -414,7 +471,8 @@ const Page = () => {
 
                             <Button 
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-[#FF8000] to-[#FF9500] hover:from-[#FF9500] hover:to-[#FF8000] text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform"
+                                disabled={!privacyAccepted}
+                                className="w-full bg-gradient-to-r from-[#FF8000] to-[#FF9500] hover:from-[#FF9500] hover:to-[#FF8000] text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                             >
                                 Registrarse
                             </Button>
@@ -432,14 +490,15 @@ const Page = () => {
                                     ¿Ya tienes cuenta? <span className="font-semibold">Iniciar sesión</span>
                                 </button>
                             </div>
+                            </div>
                         </form>
+                        </div>
                     </div>
-                    <div className="hidden lg:block flex-1 min-w-0" aria-hidden />
                 </div>
 
                 {/* Franja naranja: en vista dividida arriba (order-1) con altura fija; en lg a la derecha a altura completa */}
                 <div 
-                    className={`lg:absolute lg:right-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#FF8000] to-[#FF9500] transition-all duration-1000 ease-in-out z-30 order-1 lg:order-2 flex-none h-[220px] sm:h-[260px] lg:flex-initial lg:min-h-0 ${
+                    className={`lg:absolute lg:right-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#FF8000] to-[#FF9500] transition-all duration-1000 ease-in-out z-30 order-1 lg:order-2 flex-none min-h-[200px] sm:min-h-[220px] lg:min-h-0 lg:h-full lg:flex-1 ${
                         isExpanded 
                             ? 'h-full fixed top-0 bottom-0 right-0' 
                             : 'lg:h-full min-h-0'
@@ -460,21 +519,28 @@ const Page = () => {
                                 : 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)'
                     }}
                 >
-                    <div className={`text-center px-6 sm:px-8 md:px-12 py-8 lg:py-0 transition-all duration-500 ${
-                        isExpanded ? 'opacity-0 scale-110' : 'opacity-100 scale-100'
-                    }`}>
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 md:mb-6">
-                            ¡Hola, Bienvenido!
-                        </h2>
-                        <p className="text-lg sm:text-xl text-white/90 mb-6 md:mb-8">
-                            ¿Ya tienes cuenta?
-                        </p>
-                        <button
-                            onClick={handleSwitchToLogin}
-                            className="px-6 sm:px-8 py-2 sm:py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-[#FF8000] transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
-                        >
-                            Iniciar sesión
-                        </button>
+                    <div
+                        className={`flex w-full flex-col items-stretch justify-center px-4 py-5 transition-all duration-500 sm:px-6 sm:py-6 md:px-10 lg:h-full lg:min-h-0 lg:max-w-lg lg:items-center lg:gap-6 lg:px-8 lg:py-12 xl:px-10 ${
+                            isExpanded ? 'scale-110 opacity-0' : 'scale-100 opacity-100'
+                        }`}
+                    >
+                        <div className="mx-auto w-full max-w-md">
+                            <div className="text-center">
+                            <h2 className="mb-3 text-2xl font-bold text-white sm:mb-4 sm:text-3xl md:mb-6 md:text-4xl lg:mb-5 lg:text-5xl">
+                                ¡Hola, Bienvenido!
+                            </h2>
+                            <p className="mb-4 text-base text-white/90 sm:mb-6 sm:text-lg md:mb-7 md:text-xl lg:mb-6">
+                                ¿Ya tienes cuenta?
+                            </p>
+                            <button
+                                type="button"
+                                onClick={handleSwitchToLogin}
+                                className="rounded-lg border-2 border-white px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-white hover:text-[#FF8000] sm:px-8 sm:py-3 sm:text-base"
+                            >
+                                Iniciar sesión
+                            </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import useSWR from 'swr'
 import TiendaNavHeader from '@/components/TiendaNavHeader'
+import { swrFetcher } from '@/lib/swrFetcher'
+import { resolvePublicidadUrl } from '@/lib/publicidad'
 
 export default function DesarrolladoresPage() {
     // Modo oscuro: solo reflejamos el estado global (tienda), no lo forzamos
@@ -58,11 +61,31 @@ export default function DesarrolladoresPage() {
         }
     }, [])
 
+    const { data: devs = [] } = useSWR('/desarrolladores', swrFetcher, {
+        revalidateOnFocus: false,
+        dedupingInterval: 10000,
+    })
+
     const bg = darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
     const sectionBg = darkMode ? 'from-gray-900 via-gray-900 to-gray-900' : 'from-white via-gray-50 to-white'
     const cardBorder = darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'
     const chipBorder = darkMode ? 'border-gray-700 bg-gray-900/80 text-gray-200' : 'border-gray-200 bg-white text-gray-700'
     const textMuted = darkMode ? 'text-gray-300' : 'text-gray-600'
+
+    const fechaRango = (inicio, fin) => {
+        const format = (v) => {
+            if (!v) return null
+            const d = new Date(`${v}T00:00:00`)
+            if (Number.isNaN(d.getTime())) return null
+            return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short' })
+        }
+        const a = format(inicio)
+        const b = format(fin)
+        if (a && b) return `${a} - ${b}`
+        if (a) return `${a} - Actual`
+        if (b) return `Hasta ${b}`
+        return 'Periodo no especificado'
+    }
 
     return (
         <div className={`min-h-screen transition-colors duration-300 ${bg}`}>
@@ -90,7 +113,7 @@ export default function DesarrolladoresPage() {
                             className={`mt-6 inline-flex items-center gap-3 rounded-full border px-4 py-1.5 text-xs shadow-sm ${chipBorder}`}
                         >
                             <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>Última actualización: 17/03/2026</span>
+                            <span>Integrantes registrados: {Array.isArray(devs) ? devs.length : 0}</span>
                         </div>
                         <div className="mt-4 text-xs text-[#FF8000] font-medium">
                             <Link href="/tienda" className="inline-flex items-center gap-1 hover:underline">
@@ -101,152 +124,55 @@ export default function DesarrolladoresPage() {
                     </div>
                 </section>
 
-                <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-12 sm:space-y-16">
-                    {/* Nivel 1: Dirección general y líder técnico (tope del organigrama) */}
-                    <div className="space-y-6">
-                        <div className="text-center space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#FF8000]">
-                                Dirección del proyecto
-                            </p>
-                            <h2 className="text-xl sm:text-2xl font-semibold">
-                                Organigrama del proyecto de tienda en línea
-                            </h2>
-                            <p className={`text-sm sm:text-base max-w-2xl mx-auto ${textMuted}`}>
-                                Una vista rápida de cómo se organiza el equipo clave que impulsa la plataforma:
-                                dirección general, liderazgo técnico y desarrollo.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col md:flex-row md:items-stretch gap-6 md:gap-8 justify-center">
-                            {/* CEO */}
-                            <div className={`flex-1 rounded-3xl border p-6 sm:p-7 shadow-lg ${cardBorder}`}>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                                    <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-2xl overflow-hidden border border-gray-700 shadow-[0_10px_35px_rgba(0,0,0,1)] bg-black/40">
-                                        <Image
-                                            src="/Imagenes/caja.png"
-                                            alt="Foto de Lic. José Luis Arregui Cussi"
-                                            fill
-                                            sizes="7rem"
-                                            className="object-contain p-3"
-                                            priority
-                                        />
-                                    </div>
-                                    <div className="flex-1 space-y-2">
-                                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-orange-500/90">
-                                            Dirección general
-                                        </p>
-                                        <h3 className="text-lg sm:text-xl font-semibold">
-                                            Lic. José Luis Arregui Cussi
-                                        </h3>
-                                        <p className={`text-sm leading-relaxed ${textMuted}`}>
-                                            Responsable de las decisiones estratégicas de la empresa y de marcar la
-                                            visión a largo plazo del proyecto de la tienda en línea.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Líder técnico */}
-                            <div className={`flex-1 rounded-3xl border p-6 sm:p-7 shadow-lg ${cardBorder}`}>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                                    <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-2xl overflow-hidden border border-gray-700 shadow-[0_10px_35px_rgba(0,0,0,1)] bg-black/40">
-                                        <Image
-                                            src="/Imagenes/ing_Carlos.jpeg"
-                                            alt="Foto de Ing. Carlos Arnulfo Preciado Rodríguez"
-                                            fill
-                                            sizes="7rem"
-                                            className="object-contain p-3"
-                                            priority
-                                        />
-                                    </div>
-                                    <div className="flex-1 space-y-2">
-                                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-sky-400/90">
-                                            Líder técnico
-                                        </p>
-                                        <h3 className="text-lg sm:text-xl font-semibold">
-                                            Ing. Carlos Arnulfo Preciado Rodríguez
-                                        </h3>
-                                        <p className={`text-sm leading-relaxed ${textMuted}`}>
-                                            Encargado de coordinar el diseño técnico, la arquitectura y la implementación
-                                            del proyecto de la tienda en línea en su nivel operativo.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Conector visual hacia el siguiente nivel del organigrama */}
-                        <div className="flex justify-center" aria-hidden="true">
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="h-5 w-px bg-gradient-to-b from-transparent via-gray-500/70 to-transparent" />
-                                <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.25em] text-gray-400">
-                                    <span className="h-px w-6 bg-gray-500/60" />
-                                    <span>Equipo de desarrollo</span>
-                                    <span className="h-px w-6 bg-gray-500/60" />
-                                </div>
-                                <div className="h-5 w-px bg-gradient-to-b from-transparent via-gray-500/70 to-transparent" />
-                            </div>
-                        </div>
+                <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+                    <div className="text-center space-y-2 mb-8">
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#FF8000]">
+                            Equipo de desarrollo
+                        </p>
+                        <h2 className="text-xl sm:text-2xl font-semibold">
+                            Personas que han construido la plataforma
+                        </h2>
                     </div>
 
-                    {/* Nivel 2: Equipo de desarrollo (cartas más compactas) */}
-                    <div className="flex flex-col md:flex-row md:items-stretch gap-6 md:gap-8 justify-center">
-                        {/* Arturo */}
-                        <div className={`flex-1 rounded-3xl border p-6 sm:p-7 shadow-lg ${cardBorder}`}>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                                <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-2xl overflow-hidden border border-gray-700 shadow-[0_10px_35px_rgba(0,0,0,1)]">
-                                    <Image
-                                        src="/Imagenes/ing_Arturo.jpeg"
-                                        alt="Foto de Arturo Rivera Cervantes"
-                                        fill
-                                        sizes="7rem"
-                                        className="object-cover"
-                                        priority
-                                    />
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-orange-500/90">
-                                        Desarrollo backend
-                                    </p>
-                                    <h3 className="text-lg sm:text-xl font-semibold">
-                                        Arturo Rivera Cervantes
-                                    </h3>
-                                    <p className={`text-sm leading-relaxed ${textMuted}`}>
-                                        Focado en la lógica de negocio, servicios y conectores que mantienen viva la
-                                        tienda y sus integraciones.
-                                    </p>
-                                </div>
-                            </div>
+                    {devs.length === 0 ? (
+                        <div className={`rounded-3xl border p-8 text-center ${cardBorder}`}>
+                            <p className={textMuted}>Aun no hay integrantes registrados.</p>
                         </div>
-
-                        {/* Fernando */}
-                        <div className={`flex-1 rounded-3xl border p-6 sm:p-7 shadow-lg ${cardBorder}`}>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                                <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-2xl overflow-hidden border border-gray-700 shadow-[0_10px_35px_rgba(0,0,0,1)]">
-                                    <Image
-                                        src="/Imagenes/ing_Fernando.jpeg"
-                                        alt="Foto de Fernando Durán"
-                                        fill
-                                        sizes="7rem"
-                                        className="object-cover"
-                                        priority
-                                    />
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-sky-400/90">
-                                        Diseño y experiencia
-                                    </p>
-                                    <h3 className="text-lg sm:text-xl font-semibold">
-                                        Fernando Durán
-                                    </h3>
-                                    <p className={`text-sm leading-relaxed ${textMuted}`}>
-                                        Centrado en que las vistas y componentes se vean claros, consistentes y fáciles
-                                        de usar para las personas que navegan la tienda.
-                                    </p>
-                                </div>
-                            </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                            {devs.map((dev, idx) => {
+                                const left = idx % 2 === 0
+                                const roleColor = left ? 'text-orange-500/90' : 'text-sky-400/90'
+                                return (
+                                    <article key={dev.id} className={`rounded-3xl border p-6 sm:p-7 shadow-lg ${cardBorder}`}>
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+                                            <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-2xl overflow-hidden border border-gray-700 shadow-[0_10px_35px_rgba(0,0,0,0.45)] bg-black/20 shrink-0">
+                                                <img
+                                                    src={resolvePublicidadUrl(dev.foto_url)}
+                                                    alt={`Foto de ${dev.nombre}`}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                            <div className="flex-1 space-y-2">
+                                                <p className={`text-[0.7rem] font-semibold uppercase tracking-[0.22em] ${roleColor}`}>
+                                                    {dev.rol}
+                                                </p>
+                                                <h3 className="text-lg sm:text-xl font-semibold">
+                                                    {dev.nombre}
+                                                </h3>
+                                                <p className={`text-sm leading-relaxed ${textMuted}`}>
+                                                    {dev.descripcion}
+                                                </p>
+                                                <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                    {fechaRango(dev.fecha_inicio, dev.fecha_fin)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </article>
+                                )
+                            })}
                         </div>
-                    </div>
+                    )}
                 </section>
             </main>
         </div>

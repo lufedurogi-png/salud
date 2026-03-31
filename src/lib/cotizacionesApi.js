@@ -84,3 +84,19 @@ export async function restoreCotizacionFromPapeleraApi(id) {
     const { data } = await axios.post(`/cotizaciones/${id}/restore`)
     if (!data.success) throw new Error(data.message || 'Error al restaurar.')
 }
+
+/**
+ * Invitado sin cuenta: guarda en servidor, envía PDF por correo (ruta pública).
+ */
+export async function enviarCotizacionInvitadoApi(email, itemsConProducto, total) {
+    const items = formatItemsForApi(itemsConProducto)
+    if (items.length === 0) throw new Error('Debe incluir al menos un ítem.')
+    const { data } = await axios.post('/cotizaciones-invitado', {
+        email: String(email || '').trim(),
+        privacy_accepted: true,
+        items,
+        total: Number(total) ?? 0,
+    })
+    if (!data.success) throw new Error(data.message || 'Error al enviar la cotización.')
+    return data
+}

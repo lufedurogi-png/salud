@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import useSWR from 'swr'
 import ProductCard from '@/components/ProductCard'
 import TiendaNavHeader from '@/components/TiendaNavHeader'
-import { getCatalogEstado } from '@/lib/productos'
+import { getCatalogEstado, getFiltrosDinamicosBusqueda, getProductos } from '@/lib/productos'
 import { getBusqueda, getBusquedaSessionId } from '@/lib/busqueda'
 import { useTiendaDarkMode } from '@/hooks/useTiendaDarkMode'
 
@@ -28,10 +29,28 @@ const RANGOS_PRECIO = [
     { value: '50000', label: 'Más de $50,000', min: 50000, max: null },
 ]
 
+function parseUrlFilters(searchParams) {
+    const marca = searchParams.get('marca') ?? ''
+    const precio = searchParams.get('precio') ?? ''
+    const stock = searchParams.get('stock') ?? ''
+    let filtros = {}
+    try {
+        const raw = searchParams.get('filtros')
+        if (raw) filtros = JSON.parse(decodeURIComponent(raw)) || {}
+    } catch {
+        //
+    }
+    return { marca, precio, stock, filtros }
+}
+
 export default function BusquedaClient({ initialData = null, initialQuery = '' }) {
+    const router = useRouter()
+    const pathname = usePathname()
     const searchParams = useSearchParams()
     const querySearch = searchParams.get('q') ?? ''
     const initialTrimmed = typeof initialQuery === 'string' ? initialQuery.trim() : ''
+
+    const parsed = parseUrlFilters(searchParams)
 
     const { darkMode, setDarkMode } = useTiendaDarkMode()
     const [catalogDisponible, setCatalogDisponible] = useState(false)
@@ -44,8 +63,12 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
         initialTrimmed ? !(initialData?.productos?.length || (initialData?.texto_original !== undefined && initialData?.texto_original !== '')) : false
     )
     const [orden, setOrden] = useState('reciente')
-    const [rangoPrecio, setRangoPrecio] = useState('')
-    const [selectedMarca, setSelectedMarca] = useState('')
+    const [rangoPrecio, setRangoPrecio] = useState(() => parsed.precio || '')
+    const [selectedMarca, setSelectedMarca] = useState(() => parsed.marca || '')
+    const [stockFiltro, setStockFiltro] = useState(() => parsed.stock || '')
+    const [filtrosDinamicos, setFiltrosDinamicos] = useState({})
+    const [filtrosDinamicosSeleccionados, setFiltrosDinamicosSeleccionados] = useState(() => parsed.filtros || {})
+
     const initialDataRef = useRef(initialData)
     initialDataRef.current = initialData
 
@@ -58,7 +81,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
     useEffect(() => {
         const q = typeof querySearch === 'string' ? querySearch.trim() : ''
         if (!catalogDisponible || !q) {
-            setResultadoBusqueda(q ? null : (initialData || null))
+            setResultadoBusqueda(q ? null : initialData || null)
             setLoadingBusqueda(false)
             return
         }
@@ -75,7 +98,94 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
             .finally(() => setLoadingBusqueda(false))
     }, [catalogDisponible, querySearch, initialTrimmed])
 
-    // Marcas únicas de los resultados de búsqueda
+    const parsedKey = `${parsed.marca}|${parsed.precio}|${parsed.stock}|${JSON.stringify(parsed.filtros)}`
+    useEffect(() => {
+        setSelectedMarca(parsed.marca)
+        setRangoPrecio(parsed.precio)
+        setStockFiltro(parsed.stock)
+        setFiltrosDinamicosSeleccionados(parsed.filtros)
+    }, [parsedKey])
+
+    const rango = RANGOS_PRECIO.find((r) => r.value === rangoPrecio)
+    const filtrosActivos = useMemo(
+        () =>
+            Object.fromEntries(
+                Object.entries(filtrosDinamicosSeleccionados).filter(([, v]) => v != null && String(v).trim() !== '')
+            ),
+        [filtrosDinamicosSeleccionados]
+    )
+
+    const usarApiProductos = Object.keys(filtrosActivos).length > 0
+
+    const filtrosKeyRaw =
+        querySearch.trim() && catalogDisponible
+            ? ['filtros-dinamicos-busq', querySearch.trim(), selectedMarca, rango?.min, rango?.max, JSON.stringify(filtrosActivos)]
+            : null
+    const filtrosKeyStr = filtrosKeyRaw ? JSON.stringify(filtrosKeyRaw) : ''
+    const [filtrosKeyDebounced, setFiltrosKeyDebounced] = useState(() => filtrosKeyRaw)
+    useEffect(() => {
+        if (!filtrosKeyRaw) {
+            setFiltrosKeyDebounced(null)
+            return
+        }
+        const t = setTimeout(() => setFiltrosKeyDebounced(filtrosKeyRaw), 180)
+        return () => clearTimeout(t)
+    }, [filtrosKeyStr])
+
+    const { data: filtrosDinamicosData } = useSWR(
+        filtrosKeyDebounced,
+        async () => {
+            const f = await getFiltrosDinamicosBusqueda(querySearch.trim(), {
+                marca: selectedMarca || undefined,
+                precioMin: rango?.min ?? undefined,
+                precioMax: rango?.max ?? undefined,
+                filtros: filtrosActivos,
+            })
+            return f
+        },
+        { revalidateOnFocus: false, dedupingInterval: 30000 }
+    )
+    useEffect(() => {
+        setFiltrosDinamicos(filtrosDinamicosData ?? {})
+    }, [filtrosDinamicosData])
+
+    useEffect(() => {
+        setFiltrosDinamicosSeleccionados({})
+    }, [querySearch])
+
+    const productosKeyRaw =
+        usarApiProductos && catalogDisponible && querySearch.trim()
+            ? ['busqueda-productos-api', querySearch.trim(), selectedMarca, rangoPrecio, orden, JSON.stringify(filtrosActivos)]
+            : null
+    const productosKeyStr = productosKeyRaw ? JSON.stringify(productosKeyRaw) : ''
+    const [productosKeyDebounced, setProductosKeyDebounced] = useState(() => productosKeyRaw)
+    useEffect(() => {
+        if (!productosKeyRaw) {
+            setProductosKeyDebounced(null)
+            return
+        }
+        const t = setTimeout(() => setProductosKeyDebounced(productosKeyRaw), 250)
+        return () => clearTimeout(t)
+    }, [productosKeyStr])
+
+    const { data: productosApiData, isLoading: loadingProductosApi } = useSWR(
+        productosKeyDebounced,
+        async () => {
+            const filters = {
+                busqueda_q: querySearch.trim(),
+                orden: orden === 'precio_asc' ? 'precio_asc' : orden === 'precio_desc' ? 'precio_desc' : 'reciente',
+                per_page: 120,
+                filtros: filtrosActivos,
+            }
+            if (selectedMarca) filters.marca = selectedMarca
+            if (rango?.min != null) filters.precio_min = rango.min
+            if (rango?.max != null) filters.precio_max = rango.max
+            const res = await getProductos(filters)
+            return res?.productos ?? []
+        },
+        { revalidateOnFocus: false, dedupingInterval: 15000 }
+    )
+
     const marcas = useMemo(() => {
         if (!resultadoBusqueda?.productos?.length) return []
         const set = new Set()
@@ -85,21 +195,19 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
         return Array.from(set).sort((a, b) => a.localeCompare(b))
     }, [resultadoBusqueda?.productos])
 
-    // Filtrar y ordenar resultados según la barra de filtros
-    const productosFiltrados = useMemo(() => {
+    const productosFiltradosCliente = useMemo(() => {
         if (!resultadoBusqueda?.productos?.length) return []
         let list = [...resultadoBusqueda.productos]
-
         if (selectedMarca) {
             list = list.filter((p) => p?.marca && String(p.marca).trim() === selectedMarca)
         }
-        const rango = RANGOS_PRECIO.find((r) => r.value === rangoPrecio)
-        if (rango && (rango.min != null || rango.max != null)) {
+        const rg = RANGOS_PRECIO.find((r) => r.value === rangoPrecio)
+        if (rg && (rg.min != null || rg.max != null)) {
             list = list.filter((p) => {
                 const precio = Number(p?.precio)
                 if (Number.isNaN(precio)) return false
-                if (rango.min != null && precio < rango.min) return false
-                if (rango.max != null && precio > rango.max) return false
+                if (rg.min != null && precio < rg.min) return false
+                if (rg.max != null && precio > rg.max) return false
                 return true
             })
         }
@@ -111,24 +219,69 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
         return list
     }, [resultadoBusqueda?.productos, selectedMarca, rangoPrecio, orden])
 
+    const listaBase = usarApiProductos ? productosApiData ?? [] : productosFiltradosCliente
+
+    const productosConStock = useMemo(() => {
+        if (!Array.isArray(listaBase)) return []
+        if (!stockFiltro) return listaBase
+        return listaBase.filter((producto) => {
+            const totalStock = Number(producto?.disponible || 0) + Number(producto?.disponible_cd || 0)
+            if (stockFiltro === 'con_stock') return totalStock > 0
+            if (stockFiltro === 'sin_stock') return totalStock <= 0
+            return true
+        })
+    }, [listaBase, stockFiltro])
+
+    const actualizarUrl = useCallback(() => {
+        const params = new URLSearchParams()
+        const q = typeof querySearch === 'string' ? querySearch.trim() : ''
+        if (q) params.set('q', q)
+        if (selectedMarca) params.set('marca', selectedMarca)
+        if (rangoPrecio) params.set('precio', rangoPrecio)
+        if (stockFiltro) params.set('stock', stockFiltro)
+        const fActivos = Object.fromEntries(
+            Object.entries(filtrosDinamicosSeleccionados).filter(([, v]) => v != null && String(v).trim() !== '')
+        )
+        if (Object.keys(fActivos).length > 0) {
+            params.set('filtros', encodeURIComponent(JSON.stringify(fActivos)))
+        }
+        const qs = params.toString()
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    }, [pathname, router, querySearch, selectedMarca, rangoPrecio, stockFiltro, filtrosDinamicosSeleccionados])
+
+    useEffect(() => {
+        actualizarUrl()
+    }, [selectedMarca, rangoPrecio, stockFiltro, filtrosDinamicosSeleccionados])
+
+    const paramsParaUrl = new URLSearchParams()
+    if (typeof querySearch === 'string' && querySearch.trim()) paramsParaUrl.set('q', querySearch.trim())
+    if (selectedMarca) paramsParaUrl.set('marca', selectedMarca)
+    if (rangoPrecio) paramsParaUrl.set('precio', rangoPrecio)
+    if (stockFiltro) paramsParaUrl.set('stock', stockFiltro)
+    const fActUrl = Object.fromEntries(
+        Object.entries(filtrosDinamicosSeleccionados).filter(([, v]) => v != null && String(v).trim() !== '')
+    )
+    if (Object.keys(fActUrl).length > 0) paramsParaUrl.set('filtros', encodeURIComponent(JSON.stringify(fActUrl)))
+    const urlConFiltros = paramsParaUrl.toString() ? `${pathname}?${paramsParaUrl.toString()}` : pathname
+
     const bg = darkMode ? 'bg-gray-900' : 'bg-gray-50'
     const textMuted = darkMode ? 'text-gray-400' : 'text-gray-600'
     const tieneResultados = resultadoBusqueda?.productos?.length > 0
+    const loadingLista = usarApiProductos ? loadingProductosApi : false
 
     return (
         <div className={`min-h-screen transition-colors duration-300 ${bg} ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
             <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
             <div className="flex">
-                {/* Barra de filtros (misma que en subcategoría) */}
                 {tieneResultados && (
-                    <aside className={`w-64 min-h-screen border-r shrink-0 transition-colors duration-300 ${
-                        darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                    }`}>
+                    <aside
+                        className={`w-64 min-h-screen border-r shrink-0 transition-colors duration-300 ${
+                            darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                        }`}
+                    >
                         <div className="p-6 space-y-8">
                             <div>
-                                <h3 className={`text-sm font-bold uppercase mb-4 ${
-                                    darkMode ? 'text-white' : 'text-gray-900'
-                                }`}>
+                                <h3 className={`text-sm font-bold uppercase mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     ORDENAR POR
                                 </h3>
                                 <select
@@ -147,9 +300,26 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                             </div>
 
                             <div>
-                                <h3 className={`text-sm font-bold uppercase mb-4 ${
-                                    darkMode ? 'text-white' : 'text-gray-900'
-                                }`}>
+                                <h3 className={`text-sm font-bold uppercase mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    STOCK
+                                </h3>
+                                <select
+                                    value={stockFiltro}
+                                    onChange={(e) => setStockFiltro(e.target.value)}
+                                    className={`w-full px-4 py-2 rounded-lg border text-sm ${
+                                        darkMode
+                                            ? 'bg-gray-700 border-gray-600 text-white'
+                                            : 'bg-white border-gray-300 text-gray-900'
+                                    }`}
+                                >
+                                    <option value="">Todos</option>
+                                    <option value="con_stock">Con stock</option>
+                                    <option value="sin_stock">Sin stock</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <h3 className={`text-sm font-bold uppercase mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     PRECIO
                                 </h3>
                                 <select
@@ -170,9 +340,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                             </div>
 
                             <div>
-                                <h3 className={`text-sm font-bold uppercase mb-4 ${
-                                    darkMode ? 'text-white' : 'text-gray-900'
-                                }`}>
+                                <h3 className={`text-sm font-bold uppercase mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     MARCA
                                 </h3>
                                 <select
@@ -186,9 +354,47 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                                 >
                                     <option value="">Todas</option>
                                     {marcas.map((m) => (
-                                        <option key={m} value={m}>{m}</option>
+                                        <option key={m} value={m}>
+                                            {m}
+                                        </option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div className="overflow-y-auto max-h-[430px] pr-1 -mr-1">
+                                <div className="space-y-4 pt-2 border-t border-gray-200 dark:border-gray-600">
+                                    {Object.entries(filtrosDinamicos)
+                                        .filter(([nombre]) => nombre.toLowerCase() !== 'marca')
+                                        .map(([nombre, opciones]) => (
+                                            <div key={nombre} className="space-y-1.5">
+                                                <h3
+                                                    className={`text-xs font-bold uppercase ${
+                                                        darkMode ? 'text-gray-300' : 'text-gray-600'
+                                                    }`}
+                                                >
+                                                    {nombre}
+                                                </h3>
+                                                <select
+                                                    value={filtrosDinamicosSeleccionados[nombre] ?? ''}
+                                                    onChange={(e) =>
+                                                        setFiltrosDinamicosSeleccionados((s) => ({ ...s, [nombre]: e.target.value }))
+                                                    }
+                                                    className={`w-full px-3 py-1.5 rounded border text-xs ${
+                                                        darkMode
+                                                            ? 'bg-gray-700 border-gray-600 text-white'
+                                                            : 'bg-white border-gray-300 text-gray-900'
+                                                    }`}
+                                                >
+                                                    <option value="">Todas</option>
+                                                    {(opciones || []).map((opt) => (
+                                                        <option key={opt} value={opt}>
+                                                            {opt}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ))}
+                                </div>
                             </div>
                         </div>
                     </aside>
@@ -197,7 +403,9 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                 <main className="flex-1 p-8">
                     <div className="max-w-7xl mx-auto">
                         <nav className={`text-sm mb-6 ${textMuted}`}>
-                            <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
+                            <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">
+                                Tienda
+                            </Link>
                             <span className="mx-2">/</span>
                             <span className={darkMode ? 'text-gray-300' : 'text-gray-800'}>Buscar</span>
                         </nav>
@@ -228,37 +436,56 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                             <>
                                 {loadingBusqueda ? (
                                     <p className={textMuted}>Buscando…</p>
-                                ) : resultadoBusqueda && (
-                                    <>
-                                        {resultadoBusqueda.correccion_aplicada && (
-                                            <p className={`mb-4 text-sm rounded-lg px-3 py-2 ${
-                                                darkMode ? 'bg-gray-800 text-amber-300 border border-amber-700/50' : 'bg-amber-50 text-amber-800 border border-amber-200'
-                                            }`}>
-                                                Se mostraron resultados para «{resultadoBusqueda.texto_normalizado}» (se aplicó una corrección).
-                                            </p>
-                                        )}
-                                        {resultadoBusqueda.productos.length === 0 ? (
-                                            <p className={textMuted}>
-                                                No se encontraron productos para «{resultadoBusqueda.texto_original}».
-                                            </p>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                                {productosFiltrados.map((producto) => (
-                                                    <ProductCard
-                                                        key={producto.clave}
-                                                        producto={producto}
-                                                        darkMode={darkMode}
-                                                        busquedaId={resultadoBusqueda.busqueda_id || undefined}
-                                                    />
-                                                ))}
-                                            </div>
-                                        )}
-                                        {resultadoBusqueda.productos.length > 0 && productosFiltrados.length === 0 && (
-                                            <p className={textMuted}>
-                                                Ningún producto coincide con los filtros seleccionados. Prueba con otra marca o rango de precio.
-                                            </p>
-                                        )}
-                                    </>
+                                ) : (
+                                    resultadoBusqueda && (
+                                        <>
+                                            {resultadoBusqueda.correccion_aplicada && (
+                                                <p
+                                                    className={`mb-4 text-sm rounded-lg px-3 py-2 ${
+                                                        darkMode
+                                                            ? 'bg-gray-800 text-amber-300 border border-amber-700/50'
+                                                            : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                    }`}
+                                                >
+                                                    Se mostraron resultados para «{resultadoBusqueda.texto_normalizado}» (se aplicó una
+                                                    corrección).
+                                                </p>
+                                            )}
+                                            {resultadoBusqueda.productos.length === 0 ? (
+                                                <p className={textMuted}>
+                                                    No se encontraron productos para «{resultadoBusqueda.texto_original}».
+                                                </p>
+                                            ) : (
+                                                <div className="relative">
+                                                    {loadingLista && (
+                                                        <div className="absolute top-0 right-0 z-10 px-3 py-1 rounded-full text-sm font-medium bg-[#FF8000]/90 text-white">
+                                                            {productosConStock.length > 0 ? 'Filtrando…' : 'Cargando…'}
+                                                        </div>
+                                                    )}
+                                                    <div
+                                                        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 transition-opacity duration-200 ${
+                                                            loadingLista ? 'opacity-70 pointer-events-none' : ''
+                                                        }`}
+                                                    >
+                                                        {productosConStock.map((producto) => (
+                                                            <ProductCard
+                                                                key={producto.clave}
+                                                                producto={producto}
+                                                                darkMode={darkMode}
+                                                                busquedaId={resultadoBusqueda.busqueda_id || undefined}
+                                                                returnUrl={urlConFiltros}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {resultadoBusqueda.productos.length > 0 && productosConStock.length === 0 && (
+                                                <p className={textMuted}>
+                                                    Ningún producto coincide con los filtros seleccionados. Prueba con otra combinación.
+                                                </p>
+                                            )}
+                                        </>
+                                    )
                                 )}
                             </>
                         )}
@@ -267,7 +494,9 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                             <Link
                                 href="/tienda"
                                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium border transition-colors ${
-                                    darkMode ? 'bg-gray-800 border-gray-700 hover:text-[#FF8000] hover:border-[#FF8000]' : 'bg-white border-gray-200 hover:text-[#FF8000] hover:border-[#FF8000]'
+                                    darkMode
+                                        ? 'bg-gray-800 border-gray-700 hover:text-[#FF8000] hover:border-[#FF8000]'
+                                        : 'bg-white border-gray-200 hover:text-[#FF8000] hover:border-[#FF8000]'
                                 }`}
                             >
                                 ← Volver a la tienda

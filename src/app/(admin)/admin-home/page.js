@@ -14,6 +14,7 @@ import { swrFetcher } from '@/lib/swrFetcher'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 import { BarChart, Bar } from 'recharts'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as LineTooltip, ResponsiveContainer as LineResponsive, Legend as LineLegend } from 'recharts'
+import { adminTitleAccentBarClass } from '@/lib/adminUi'
 
 const swrConfig = { revalidateOnFocus: false, dedupingInterval: 60000 }
 
@@ -28,6 +29,39 @@ function hora12(hora24) {
     if (h === 12) return '12:00 pm'
     if (h < 12) return `${h}:00 am`
     return `${h - 12}:00 pm`
+}
+
+/** Tooltip con fondo claro y texto negro (legible en modo oscuro del sitio). */
+function CatalogBarTooltip({ active, payload, label }) {
+    if (!active || !payload?.length) return null
+    const row = payload[0]?.payload
+    const name = label ?? row?.nombre
+    const val = payload[0]?.value
+    return (
+        <div
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-lg text-sm max-w-[280px]"
+            style={{ color: '#000000' }}
+        >
+            <p className="font-semibold leading-snug" style={{ color: '#000000' }}>{name}</p>
+            <p className="mt-1.5 leading-snug" style={{ color: '#000000' }}>
+                <span style={{ color: '#059669', fontWeight: 600 }}>Productos</span>
+                <span style={{ color: '#000000' }}>{' '}: {val}</span>
+            </p>
+        </div>
+    )
+}
+
+function CatalogPieTooltip({ active, payload }) {
+    if (!active || !payload?.length) return null
+    const p = payload[0]
+    const name = p.name
+    const val = p.value
+    return (
+        <div className="rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-lg text-sm" style={{ color: '#000000' }}>
+            <p className="font-semibold" style={{ color: '#000000' }}>{name}</p>
+            <p className="mt-1" style={{ color: '#000000' }}>Total: {val}</p>
+        </div>
+    )
 }
 
 function ActividadTooltip({ active, payload, label }) {
@@ -195,6 +229,7 @@ export default function AdminHome() {
             <div className="mb-8 space-y-6">
                 <div className="flex flex-col gap-2">
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>Panel de estadísticas de catálogo</h2>
+                    <div className={adminTitleAccentBarClass(darkMode)} aria-hidden />
                     <p className={darkMode ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>
                         Vista general de productos, stock y ofertas basada en las estadísticas de la API.
                     </p>
@@ -233,7 +268,7 @@ export default function AdminHome() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-6">
                     <div className={`rounded-xl overflow-hidden shadow-lg border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                         <div className={`px-5 py-3.5 rounded-t-xl ${darkMode ? 'bg-emerald-600/30 border-b border-emerald-500/40' : 'bg-emerald-50 border-b border-emerald-200'}`}>
                             <h3 className={`text-lg font-bold ${darkMode ? 'text-emerald-300' : 'text-emerald-800'}`}>Productos por categoría</h3>
@@ -244,12 +279,12 @@ export default function AdminHome() {
                             ) : categoriasCatalogoChartData.length === 0 ? (
                                 <p className="text-gray-500 py-10 text-center text-sm">No hay datos de categorías disponibles.</p>
                             ) : (
-                                <ResponsiveContainer width="100%" height={280}>
-                                    <BarChart data={categoriasCatalogoChartData} margin={{ top: 8, right: 8, left: 0, bottom: 40 }}>
+                                <ResponsiveContainer width="100%" height={360}>
+                                    <BarChart data={categoriasCatalogoChartData} margin={{ top: 8, right: 8, left: 0, bottom: 48 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                                        <XAxis dataKey="nombre" stroke={darkMode ? '#9ca3af' : '#6b7280'} tick={{ fontSize: 11 }} angle={-25} textAnchor="end" interval={0} />
+                                        <XAxis dataKey="nombre" stroke={darkMode ? '#9ca3af' : '#6b7280'} tick={{ fontSize: 11 }} angle={-35} textAnchor="end" interval={0} height={60} />
                                         <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} tick={{ fontSize: 11 }} allowDecimals={false} />
-                                        <Tooltip />
+                                        <Tooltip content={<CatalogBarTooltip />} wrapperStyle={{ outline: 'none' }} />
                                         <Legend />
                                         <Bar dataKey="total" name="Productos" radius={[4, 4, 0, 0]} fill="#10b981" />
                                     </BarChart>
@@ -278,12 +313,12 @@ export default function AdminHome() {
                             ) : marcasCatalogoChartData.length === 0 ? (
                                 <p className="text-gray-500 py-10 text-center text-sm">No hay datos de marcas disponibles.</p>
                             ) : (
-                                <ResponsiveContainer width="100%" height={280}>
-                                    <BarChart data={marcasCatalogoChartData} margin={{ top: 8, right: 8, left: 0, bottom: 40 }}>
+                                <ResponsiveContainer width="100%" height={360}>
+                                    <BarChart data={marcasCatalogoChartData} margin={{ top: 8, right: 8, left: 0, bottom: 48 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                                        <XAxis dataKey="nombre" stroke={darkMode ? '#9ca3af' : '#6b7280'} tick={{ fontSize: 11 }} angle={-25} textAnchor="end" interval={0} />
+                                        <XAxis dataKey="nombre" stroke={darkMode ? '#9ca3af' : '#6b7280'} tick={{ fontSize: 11 }} angle={-35} textAnchor="end" interval={0} height={60} />
                                         <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} tick={{ fontSize: 11 }} allowDecimals={false} />
-                                        <Tooltip />
+                                        <Tooltip content={<CatalogBarTooltip />} wrapperStyle={{ outline: 'none' }} />
                                         <Legend />
                                         <Bar dataKey="total" name="Productos" radius={[4, 4, 0, 0]} fill="#3b82f6" />
                                     </BarChart>
@@ -328,7 +363,7 @@ export default function AdminHome() {
                                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip />
+                                <Tooltip content={<CatalogPieTooltip />} wrapperStyle={{ outline: 'none' }} />
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>

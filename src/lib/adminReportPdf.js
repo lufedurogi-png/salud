@@ -2,6 +2,8 @@
  * Informes PDF de admin-home con fondo membretado.
  */
 
+import { celdaCantidadConLetra } from '@/lib/numeroALetras'
+
 const margin = 14
 const green = [5, 150, 105]
 const greenLight = [236, 253, 245]
@@ -91,7 +93,7 @@ export async function downloadInformeCategorias(categorias) {
 
     const tableData = (categorias || []).map((c) => [
         (c.nombre || 'Sin categoría').toString().slice(0, 60),
-        String(c.total ?? 0),
+        celdaCantidadConLetra(Number(c.total) || 0),
     ])
 
     autoTable(doc, {
@@ -130,7 +132,7 @@ export async function downloadInformeActividad(actividadData, eventos) {
         const tableData = eventos
             .slice(0, 80)
             .map((e) => [
-                String(e.dia),
+                celdaCantidadConLetra(Number(e.dia) || 0),
                 hora12(Number(e.hora)),
                 TIPO_LABELS[e.tipo] || 'Usuario',
                 e.evento === 'registro' ? 'Registro' : 'Inicio de sesión',
@@ -148,8 +150,8 @@ export async function downloadInformeActividad(actividadData, eventos) {
     if (actividadData && actividadData.length > 0) {
         const tableData = actividadData.map((r) => [
             String(r.mes || '-'),
-            String(r.registros ?? 0),
-            String(r.logins ?? 0),
+            celdaCantidadConLetra(Number(r.registros) || 0),
+            celdaCantidadConLetra(Number(r.logins) || 0),
         ])
 
         autoTable(doc, {
@@ -179,7 +181,7 @@ export async function downloadInformeProductosPorCategoria(categorias) {
 
     const tableData = (categorias || []).map((c) => [
         String(c.nombre || 'Sin categoría'),
-        String(Number(c.total) || 0),
+        celdaCantidadConLetra(Number(c.total) || 0),
     ])
 
     autoTable(doc, {
@@ -207,7 +209,7 @@ export async function downloadInformeProductosPorMarca(marcas) {
 
     const tableData = (marcas || []).map((m) => [
         String(m.nombre || 'Sin marca'),
-        String(Number(m.total) || 0),
+        celdaCantidadConLetra(Number(m.total) || 0),
     ])
 
     autoTable(doc, {

@@ -179,8 +179,15 @@ export function useCarrito(isLogged) {
         return () => window.removeEventListener(CARRITO_CHANGE_EVENT, handler)
     }, [refreshGuest])
 
-    // No refetch en CARRITO_CHANGE_EVENT: add/remove ya actualizan con mutate(d).
-    // Así la caché no se sobrescribe por un refetch y el ítem recién agregado no desaparece.
+    useEffect(() => {
+        if (typeof window === 'undefined' || !isLogged) return
+        const handler = () => mutate()
+        window.addEventListener(CARRITO_CHANGE_EVENT, handler)
+        return () => window.removeEventListener(CARRITO_CHANGE_EVENT, handler)
+    }, [isLogged, mutate])
+
+    // Invitados: refreshGuest en CARRITO_CHANGE_EVENT. Logueados: mutate() para PayPal/checkout
+    // que vacían el carrito en servidor sin pasar por add/remove (SWR debe revalidar).
 
     const itemsLogged = data?.items ?? []
     const isInCartLogged = useCallback((clave) => itemsLogged.some((i) => i.clave === clave), [itemsLogged])

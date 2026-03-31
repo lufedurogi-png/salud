@@ -8,9 +8,9 @@ import { useAuth } from '@/hooks/auth'
 import TiendaNavHeader from '@/components/TiendaNavHeader'
 import { getPorClaves, formatPrecio, resolveStorageUrl } from '@/lib/productos'
 import { saveCotizacionActual, useCotizacion, getEffectiveUserId } from '@/lib/cotizaciones'
-import { saveCotizacionApi, isLoggedInUserId } from '@/lib/cotizacionesApi'
-import { downloadCotizacionPdf } from '@/lib/cotizacionPdf'
+import { saveCotizacionApi, isLoggedInUserId, enviarCotizacionInvitadoApi } from '@/lib/cotizacionesApi'
 import LoginRequiredModal from '@/components/LoginRequiredModal'
+import { PrivacyNoticeModal } from '@/components/PrivacyNoticeReader'
 import { useTiendaDarkMode } from '@/hooks/useTiendaDarkMode'
 import CheckoutModal from '@/components/CheckoutModal'
 
@@ -44,6 +44,12 @@ export default function CotizacionesClient() {
     const [pagarModal, setPagarModal] = useState(false)
     const [checkoutLoading, setCheckoutLoading] = useState(false)
     const [checkoutError, setCheckoutError] = useState(null)
+    const [emailModalOpen, setEmailModalOpen] = useState(false)
+    const [emailInvitado, setEmailInvitado] = useState('')
+    const [privacyAcceptedInvitado, setPrivacyAcceptedInvitado] = useState(false)
+    const [privacyModalInvitadoOpen, setPrivacyModalInvitadoOpen] = useState(false)
+    const [enviarInvitadoError, setEnviarInvitadoError] = useState(null)
+    const [invitadoExitoMsg, setInvitadoExitoMsg] = useState(null)
 
     useEffect(() => {
         const claves = quoteItems.map((i) => i.clave)
@@ -86,12 +92,10 @@ export default function CotizacionesClient() {
         if (isEmpty) return
         const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('auth_token')
         if (!user && !hasToken) {
-            setGuardando(true)
-            try {
-                await downloadCotizacionPdf(itemsConProducto, total)
-            } finally {
-                setGuardando(false)
-            }
+            setEnviarInvitadoError(null)
+            setEmailInvitado('')
+            setPrivacyAcceptedInvitado(false)
+            setEmailModalOpen(true)
             return
         }
         setGuardando(true)
@@ -117,6 +121,32 @@ export default function CotizacionesClient() {
             const d = err?.response?.data
             const msg = d?.message || (typeof d?.errors === 'object' ? Object.values(d.errors).flat().join(' ') : null) || err?.message || 'Error al guardar la cotización.'
             setGuardarError(msg)
+        } finally {
+            setGuardando(false)
+        }
+    }
+
+    const handleEnviarCotizacionInvitado = async () => {
+        if (isEmpty || !privacyAcceptedInvitado) return
+        const email = String(emailInvitado || '').trim()
+        if (!email) {
+            setEnviarInvitadoError('Indica un correo electrónico válido.')
+            return
+        }
+        setGuardando(true)
+        setEnviarInvitadoError(null)
+        try {
+            await enviarCotizacionInvitadoApi(email, itemsConProducto, total)
+            clearItems()
+            refresh()
+            setEmailModalOpen(false)
+            setInvitadoExitoMsg('Te enviamos la cotización en PDF a tu correo electrónico.')
+            setEmailInvitado('')
+            setPrivacyAcceptedInvitado(false)
+        } catch (err) {
+            const d = err?.response?.data
+            const msg = d?.message || (typeof d?.errors === 'object' ? Object.values(d.errors).flat().join(' ') : null) || err?.message || 'No se pudo enviar la cotización.'
+            setEnviarInvitadoError(msg)
         } finally {
             setGuardando(false)
         }
@@ -148,6 +178,24 @@ export default function CotizacionesClient() {
                 </nav>
 
                 <h1 className="text-2xl md:text-3xl font-bold mb-6">Mis cotizaciones</h1>
+
+                {invitadoExitoMsg && (
+                    <div
+                        className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+                            darkMode ? 'border-emerald-700 bg-emerald-950/40 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                        }`}
+                        role="status"
+                    >
+                        {invitadoExitoMsg}
+                        <button
+                            type="button"
+                            className="ml-3 underline font-medium"
+                            onClick={() => setInvitadoExitoMsg(null)}
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                )}
 
                 {isEmpty ? (
                     <div className={`rounded-lg border p-8 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
@@ -415,6 +463,104 @@ export default function CotizacionesClient() {
                 loading={checkoutLoading}
                 error={checkoutError}
             />
+
+            <PrivacyNoticeModal darkMode={darkMode} open={privacyModalInvitadoOpen} onClose={() => setPrivacyModalInvitadoOpen(false)} />
+
+            {emailModalOpen && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60"
+                    role="presentation"
+                    onClick={() => !guardando && setEmailModalOpen(false)}
+                >
+                    <div
+                        className={`pointer-events-auto w-full max-w-md rounded-xl border-2 shadow-2xl p-6 ${
+                            darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="cotiz-inv-email-title"
+                    >
+                        <h2 id="cotiz-inv-email-title" className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Enviar cotización por correo
+                        </h2>
+                        <p className={`text-sm mb-2 ${textMuted}`}>
+                            Para recibir el PDF con el detalle de tu cotización, indica el correo electrónico al que debemos enviarlo.
+                        </p>
+                        <p className={`text-xs mb-4 ${textMuted}`}>
+                            Es posible que la cotización esté en spam o en la papelera si no la ves en Recibidos.
+                        </p>
+                        <label htmlFor="cotiz-inv-email" className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                            Correo electrónico
+                        </label>
+                        <input
+                            id="cotiz-inv-email"
+                            type="email"
+                            autoComplete="email"
+                            value={emailInvitado}
+                            onChange={(e) => setEmailInvitado(e.target.value)}
+                            disabled={guardando}
+                            className={`w-full rounded-lg border px-3 py-2.5 text-sm mb-4 ${
+                                darkMode
+                                    ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-500 focus:border-[#FF8000] focus:ring-1 focus:ring-[#FF8000]'
+                                    : 'bg-white border-gray-300 text-gray-900 focus:border-[#FF8000] focus:ring-1 focus:ring-[#FF8000]'
+                            }`}
+                            placeholder="tu@correo.com"
+                        />
+                        <div className="flex gap-2 items-start mb-4">
+                            <input
+                                id="cotiz-inv-privacy"
+                                type="checkbox"
+                                className={`mt-1 shrink-0 rounded border-gray-300 text-[#FF8000] focus:ring-[#FF8000] ${
+                                    darkMode ? 'border-gray-600 bg-gray-900' : ''
+                                }`}
+                                checked={privacyAcceptedInvitado}
+                                onChange={(e) => {
+                                    const c = e.target.checked
+                                    setPrivacyAcceptedInvitado(c)
+                                    if (c) setPrivacyModalInvitadoOpen(true)
+                                }}
+                            />
+                            <label htmlFor="cotiz-inv-privacy" className={`text-sm leading-snug cursor-pointer ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                Confirmo que he leído el{' '}
+                                <button
+                                    type="button"
+                                    className="font-semibold text-[#FF8000] hover:underline"
+                                    onClick={() => setPrivacyModalInvitadoOpen(true)}
+                                >
+                                    aviso de privacidad
+                                </button>
+                                .
+                            </label>
+                        </div>
+                        {enviarInvitadoError && (
+                            <p className="text-sm text-red-500 mb-3">{enviarInvitadoError}</p>
+                        )}
+                        <div className="flex flex-wrap justify-end gap-2">
+                            <button
+                                type="button"
+                                disabled={guardando}
+                                onClick={() => {
+                                    if (!guardando) setEmailModalOpen(false)
+                                }}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+                                    darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                disabled={guardando || !privacyAcceptedInvitado}
+                                onClick={handleEnviarCotizacionInvitado}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#FF8000] hover:bg-[#e67300] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {guardando ? 'Enviando…' : 'Enviar al correo'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

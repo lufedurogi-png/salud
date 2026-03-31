@@ -15,6 +15,7 @@ import { downloadCotizacionPdf } from '@/lib/cotizacionPdf'
 import { formatPrecio } from '@/lib/productos'
 import CheckoutModal from '@/components/CheckoutModal'
 import ChatVentasCliente from '@/components/ChatVentasCliente'
+import PrivacyNoticeReader from '@/components/PrivacyNoticeReader'
 
 /** Ventana deslizante de 7 páginas + "..." + última página + ">>". currentPage y totalPages base 1. */
 function getPaginationWindow(currentPage, totalPages) {
@@ -48,7 +49,7 @@ const Dashboard = () => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search)
             const tab = params.get('tab')
-            if (tab && ['pedidos', 'contacto', 'facturacion', 'password', 'cotizaciones', 'chat'].includes(tab)) {
+            if (tab && ['pedidos', 'contacto', 'facturacion', 'password', 'cotizaciones', 'chat', 'privacidad'].includes(tab)) {
                 setActiveTab(tab)
             }
         }
@@ -501,6 +502,7 @@ const Dashboard = () => {
         { id: 'contacto', label: 'Contacto / Envío', icon: 'icon_contacto.png' },
         { id: 'facturacion', label: 'Datos de facturación', icon: 'icon_facturacion.webp' },
         { id: 'chat', label: 'Chat con administración', icon: 'icon_mensaje.png' },
+        { id: 'privacidad', label: 'Aviso de privacidad', icon: 'icon_documento.png' },
         { id: 'password', label: 'Cambiar contraseña', icon: 'icon_contraseña.webp' }
     ]
 
@@ -684,10 +686,10 @@ const Dashboard = () => {
             }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
-                        <Link href="/" className="flex items-center">
+                        <Link href="/tienda" className="flex items-center">
                             <Image
                                 src="/Imagenes/logo_en.png"
-                                alt="NXT.IT"
+                                alt="Todo para oficina"
                                 width={120}
                                 height={40}
                                 className="h-8 w-auto"
@@ -1019,6 +1021,8 @@ const Dashboard = () => {
                                                 }`}
                                             >
                                                 <option value="todos">Todos</option>
+                                                <option value="pendiente">Pendiente</option>
+                                                <option value="enviado">Enviado</option>
                                                 <option value="completado">Completado</option>
                                                 <option value="en_proceso">En proceso</option>
                                                 <option value="cancelado">Cancelado</option>
@@ -1107,6 +1111,8 @@ const Dashboard = () => {
                                                             <div className="flex items-center space-x-2">
                                                                 {(() => {
                                                                     const estatus = (pedido.estatus_pedido || '').toLowerCase().replace(/\s/g, '_')
+                                                                    if (estatus === 'pendiente') return <div className="w-5 h-5 rounded-full border-2 border-amber-400 bg-amber-400/20" title="Pendiente" />
+                                                                    if (estatus === 'enviado') return <div className="w-5 h-5 rounded-full border-2 border-sky-500 bg-sky-500/20" title="Enviado" />
                                                                     if (estatus === 'completado') return <div className="w-5 h-5 rounded-full border-2 border-emerald-500 bg-emerald-500/20" title="Completado" />
                                                                     if (estatus === 'en_proceso') return <div className="w-5 h-5 rounded-full border-2 border-[#FF8000] bg-[#FF8000]/20" title="En proceso" />
                                                                     if (estatus === 'cancelado') return <div className="w-5 h-5 rounded-full border-2 border-red-500 bg-red-500/20" title="Cancelado" />
@@ -2401,6 +2407,31 @@ const Dashboard = () => {
                                     Escribe aquí y un administrador te responderá. Tus mensajes aparecen en naranja; las respuestas de administración en verde.
                                 </p>
                                 <ChatVentasCliente darkMode={darkMode} />
+                            </div>
+                        )}
+
+                        {activeTab === 'privacidad' && (
+                            <div className={`rounded-xl shadow-2xl p-6 md:p-8 border-2 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 ${
+                                darkMode
+                                    ? 'bg-gradient-to-br from-gray-800 via-gray-800 to-gray-900 border-gray-700 shadow-[#FF8000]/10'
+                                    : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200 shadow-[#FF8000]/5'
+                            }`}>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF8000]/20 border border-[#FF8000]/30">
+                                        <Image src="/Imagenes/icon_documento.png" alt="" width={26} height={26} className="object-contain" />
+                                    </div>
+                                    <div>
+                                        <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            Aviso de privacidad integral
+                                        </h2>
+                                        <p className={`text-sm mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                            Consulta el contenido completo con el lector paginado.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className={`rounded-2xl border p-4 md:p-6 ${darkMode ? 'border-gray-600 bg-gray-900/40' : 'border-gray-200 bg-white/80'}`}>
+                                    <PrivacyNoticeReader darkMode={darkMode} showLogo />
+                                </div>
                             </div>
                         )}
 

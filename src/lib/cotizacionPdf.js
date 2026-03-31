@@ -1,3 +1,5 @@
+import { celdaCantidadConLetra, celdaMontoConLetra, montoALetrasMx } from '@/lib/numeroALetras'
+
 /**
  * Genera y descarga un PDF de cotización con el mismo formato que en el dashboard.
  * @param {Array<{ nombre_producto?: string, clave?: string, cantidad?: number, precio_unitario?: number, subtotal?: number }>} items
@@ -110,12 +112,19 @@ export async function downloadCotizacionPdf(items, total, nombreArchivo) {
     doc.setFontSize(11)
     doc.setFont(undefined, 'bold')
     doc.setTextColor(...greenDark)
-    doc.text('Total', margin, finalY + 8)
+    doc.text('Total', margin, finalY + 5)
     doc.setFontSize(14)
-    doc.text(`$ ${totalStr}`, pageW - margin, finalY + 8, { align: 'right' })
+    doc.text(`$ ${totalStr}`, pageW - margin, finalY + 5, { align: 'right' })
+    const totalNum = typeof total === 'number' ? total : Number(total)
+    if (Number.isFinite(totalNum)) {
+        doc.setFontSize(8)
+        doc.setTextColor(80, 80, 80)
+        doc.text(`(${montoALetrasMx(totalNum)})`, pageW - margin, finalY + 10, { align: 'right' })
+        doc.setTextColor(0, 0, 0)
+    }
 
     // Pie justo después del total
-    const footerY = finalY + 16
+    const footerY = finalY + 13
     doc.setDrawColor(...green)
     doc.setLineWidth(0.4)
     doc.line(margin, footerY - 6, pageW - margin, footerY - 6)
