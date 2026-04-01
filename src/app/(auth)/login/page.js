@@ -14,7 +14,7 @@ import AuthSessionStatus from '@/app/(auth)/AuthSessionStatus'
 const Login = () => {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const returnUrl = searchParams?.get?.('returnUrl') || '/tienda'
+    const returnUrl = searchParams?.get?.('returnUrl') || '/'
 
     const { login } = useAuth({
         middleware: 'guest',

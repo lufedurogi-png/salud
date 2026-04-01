@@ -49,7 +49,7 @@ const Layout = ({ children }) => {
             }`} style={{ height: '4rem' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
-                        <Link href="/tienda" className="flex items-center">
+                        <Link href="/" className="flex items-center">
                             <Image
                                 src="/Imagenes/logo_en.png"
                                 alt="Todo para oficina"
@@ -110,7 +110,7 @@ const Layout = ({ children }) => {
                                 Inicio
                             </Link>
                             <Link
-                                href="/tienda"
+                                href="/"
                                 className={`transition-colors font-medium ${
                                     darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'
                                 }`}
@@ -180,7 +180,7 @@ const Layout = ({ children }) => {
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">
+                                    <Link href="/" className="hover:text-[#FF8000] transition-colors">
                                         Tienda
                                     </Link>
                                 </li>

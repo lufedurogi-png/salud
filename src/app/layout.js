@@ -37,9 +37,9 @@ const RootLayout = ({ children }) => {
 export const metadata = {
     title: 'Todo para oficina',
     icons: {
-        icon: '/Imagenes/logo_en.png',
-        shortcut: '/Imagenes/logo_en.png',
-        apple: '/Imagenes/logo_en.png',
+        icon: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
+        shortcut: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
+        apple: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
     },
 }
 

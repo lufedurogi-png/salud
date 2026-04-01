@@ -69,7 +69,7 @@ const Favoritos = () => {
             <main className="flex-1 p-8">
                 <div className="max-w-7xl mx-auto">
                     <nav className={`text-sm mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
+                        <Link href="/" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
                         <span className="mx-2">/</span>
                         <span className={darkMode ? 'text-gray-300' : 'text-gray-800'}>Favoritos</span>
                     </nav>
@@ -107,7 +107,7 @@ const Favoritos = () => {
                             <p className={`text-center text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                 No tienes productos en favoritos.
                             </p>
-                            <Link href="/tienda" className="inline-block mt-4 text-[#FF8000] hover:underline font-medium">
+                            <Link href="/" className="inline-block mt-4 text-[#FF8000] hover:underline font-medium">
                                 Ir a la tienda
                             </Link>
                         </div>
@@ -292,7 +292,7 @@ const Favoritos = () => {
 
                     <div className="mt-8">
                         <Link
-                            href="/tienda"
+                            href="/"
                             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium border transition-colors ${
                                 darkMode ? 'bg-gray-800 border-gray-700 hover:text-[#FF8000] hover:border-[#FF8000]' : 'bg-white border-gray-200 hover:text-[#FF8000] hover:border-[#FF8000]'
                             }`}
@@ -356,7 +356,7 @@ const Favoritos = () => {
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">
+                                    <Link href="/" className="hover:text-[#FF8000] transition-colors">
                                         Tienda
                                     </Link>
                                 </li>

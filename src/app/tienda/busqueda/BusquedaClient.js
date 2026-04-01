@@ -403,7 +403,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                 <main className="flex-1 p-8">
                     <div className="max-w-7xl mx-auto">
                         <nav className={`text-sm mb-6 ${textMuted}`}>
-                            <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">
+                            <Link href="/" className="hover:text-[#FF8000] transition-colors">
                                 Tienda
                             </Link>
                             <span className="mx-2">/</span>
@@ -422,7 +422,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                                 <p className={darkMode ? 'text-amber-400' : 'text-amber-800'}>
                                     Catálogo no disponible. Intenta más tarde.
                                 </p>
-                                <Link href="/tienda" className="inline-block mt-2 text-[#FF8000] hover:underline">
+                                <Link href="/" className="inline-block mt-2 text-[#FF8000] hover:underline">
                                     Volver a la tienda
                                 </Link>
                             </div>
@@ -492,7 +492,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
 
                         <div className="mt-8">
                             <Link
-                                href="/tienda"
+                                href="/"
                                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium border transition-colors ${
                                     darkMode
                                         ? 'bg-gray-800 border-gray-700 hover:text-[#FF8000] hover:border-[#FF8000]'

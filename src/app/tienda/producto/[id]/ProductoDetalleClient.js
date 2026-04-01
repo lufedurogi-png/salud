@@ -87,7 +87,7 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                     <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                         El catálogo de productos no está disponible en este momento. Por favor, intente más tarde.
                     </p>
-                    <Link href={returnUrl || '/tienda'} className="text-[#FF8000] hover:underline mt-4 inline-block">
+                    <Link href={returnUrl || '/'} className="text-[#FF8000] hover:underline mt-4 inline-block">
                         Volver a la tienda
                     </Link>
                 </div>
@@ -102,7 +102,7 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
             }`}>
                 <div className="text-center">
                     <h1 className="text-2xl font-bold mb-4">Producto no encontrado</h1>
-                    <Link href={returnUrl || '/tienda'} className="text-[#FF8000] hover:underline">
+                    <Link href={returnUrl || '/'} className="text-[#FF8000] hover:underline">
                         Volver a la tienda
                     </Link>
                 </div>
@@ -134,12 +134,12 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                     <ol className="flex flex-wrap items-center gap-1 sm:gap-2">
                         <li><Link href="/" className={linkHover}>Inicio</Link></li>
                         <li aria-hidden="true">›</li>
-                        <li><Link href={returnUrl || '/tienda'} className={linkHover}>Tienda</Link></li>
+                        <li><Link href={returnUrl || '/'} className={linkHover}>Tienda</Link></li>
                         {producto.grupo && (
                             <>
                                 <li aria-hidden="true">›</li>
                                 <li>
-                                    <Link href={returnUrl || '/tienda'} className={linkHover}>
+                                    <Link href={returnUrl || '/'} className={linkHover}>
                                         {producto.grupo}
                                     </Link>
                                 </li>
@@ -200,7 +200,7 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                         {/* Título arriba (en pantalla completa queda claro arriba) */}
                         <div className="xl:min-w-0">
                             {producto.grupo && (
-                                <Link href={returnUrl || '/tienda'} className={`inline-block text-sm font-medium ${textMuted} ${linkHover} mb-1`}>
+                                <Link href={returnUrl || '/'} className={`inline-block text-sm font-medium ${textMuted} ${linkHover} mb-1`}>
                                     {producto.grupo}
                                 </Link>
                             )}
@@ -612,7 +612,7 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
 
                 <div className="flex justify-center">
                     <Link
-                        href={returnUrl || '/tienda'}
+                        href={returnUrl || '/'}
                         className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium border transition-colors ${cardBg} ${linkHover}`}
                     >
                         ← Volver a la tienda

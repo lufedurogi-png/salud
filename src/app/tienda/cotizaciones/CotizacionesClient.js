@@ -172,7 +172,7 @@ export default function CotizacionesClient() {
             <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
                 <nav className={`text-sm mb-6 ${textMuted}`}>
-                    <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
+                    <Link href="/" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
                     <span className="mx-2">/</span>
                     <span className={darkMode ? 'text-gray-300' : 'text-gray-800'}>Mis cotizaciones</span>
                 </nav>
@@ -201,7 +201,7 @@ export default function CotizacionesClient() {
                     <div className={`rounded-lg border p-8 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                         <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>No tienes productos en la cotización.</p>
                         <p className={`mt-2 text-sm ${textMuted}`}>Activa el modo cotización en el menú Cotizaciones y selecciona productos en la tienda.</p>
-                        <Link href="/tienda" className="inline-block mt-4 text-[#FF8000] hover:underline font-medium">
+                        <Link href="/" className="inline-block mt-4 text-[#FF8000] hover:underline font-medium">
                             Ir a la tienda
                         </Link>
                     </div>
@@ -438,7 +438,7 @@ export default function CotizacionesClient() {
 
                 <div className="mt-8">
                     <Link
-                        href="/tienda"
+                        href="/"
                         className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium border transition-colors ${
                             darkMode ? 'bg-gray-800 border-gray-700 hover:text-[#FF8000] hover:border-[#FF8000]' : 'bg-white border-gray-200 hover:text-[#FF8000] hover:border-[#FF8000]'
                         }`}

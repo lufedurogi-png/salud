@@ -14,7 +14,7 @@ const Page = () => {
     const router = useRouter()
     const { register } = useAuth({
         middleware: 'guest',
-        redirectIfAuthenticated: '/tienda',
+        redirectIfAuthenticated: '/',
     })
 
     const [name, setName] = useState('')

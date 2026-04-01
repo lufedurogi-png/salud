@@ -42,7 +42,7 @@ export default function CompararClient() {
     }, [clavesParam])
     const volverHref = categoria && subcategoria
         ? `/tienda/${encodeURIComponent(categoria)}/${encodeURIComponent(subcategoria)}`
-        : '/tienda'
+        : '/'
 
     const { darkMode, setDarkMode } = useTiendaDarkMode()
     const [productos, setProductos] = useState([])
@@ -103,7 +103,7 @@ export default function CompararClient() {
                 <main className="max-w-2xl mx-auto px-4 py-12 text-center">
                     <h1 className="text-2xl font-bold mb-4">Comparar productos</h1>
                     <p className={textMuted}>Selecciona al menos 2 productos (máximo 4) en una subcategoría para compararlos.</p>
-                    <Link href="/tienda" className="inline-block mt-6 text-[#FF8000] hover:underline font-medium">
+                    <Link href="/" className="inline-block mt-6 text-[#FF8000] hover:underline font-medium">
                         Ir a la tienda
                     </Link>
                 </main>
@@ -129,7 +129,7 @@ export default function CompararClient() {
                 <main className="max-w-2xl mx-auto px-4 py-12 text-center">
                     <h1 className="text-2xl font-bold mb-4">No se pudieron cargar los productos</h1>
                     <p className={textMuted}>Algunos productos no están disponibles. Vuelve a la subcategoría y selecciona otros.</p>
-                    <Link href="/tienda" className="inline-block mt-6 text-[#FF8000] hover:underline font-medium">
+                    <Link href="/" className="inline-block mt-6 text-[#FF8000] hover:underline font-medium">
                         Ir a la tienda
                     </Link>
                 </main>
@@ -142,7 +142,7 @@ export default function CompararClient() {
             <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
                 <nav className={`text-sm mb-6 ${textMuted}`}>
-                    <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
+                    <Link href="/" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
                     <span className="mx-2">/</span>
                     <span className={darkMode ? 'text-gray-300' : 'text-gray-800'}>Comparar productos</span>
                 </nav>

@@ -340,7 +340,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                         <nav className={`text-sm mb-6 ${
                             darkMode ? 'text-gray-400' : 'text-gray-600'
                         }`}>
-                            <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
+                            <Link href="/" className="hover:text-[#FF8000] transition-colors">Tienda</Link>
                             <span className="mx-2">/</span>
                             <Link
                                 href={`/tienda/${encodeURIComponent(categoria)}/ver-todo`}
@@ -381,7 +381,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                                 <p className={darkMode ? 'text-amber-400' : 'text-amber-800'}>
                                     Catálogo no disponible. Intenta más tarde.
                                 </p>
-                                <Link href="/tienda" className="inline-block mt-2 text-[#FF8000] hover:underline">
+                                <Link href="/" className="inline-block mt-2 text-[#FF8000] hover:underline">
                                     Volver a la tienda
                                 </Link>
                             </div>
@@ -420,7 +420,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                                 darkMode ? 'text-gray-400' : 'text-gray-500'
                             }`}>
                                 <p>No hay productos en esta subcategoría.</p>
-                                <Link href="/tienda" className="inline-block mt-2 text-[#FF8000] hover:underline">
+                                <Link href="/" className="inline-block mt-2 text-[#FF8000] hover:underline">
                                     Volver a la tienda
                                 </Link>
                             </div>

@@ -67,7 +67,7 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
                     localStorage.setItem('auth_user', JSON.stringify(response.data.data))
                 }
                 await mutate()
-                router.push(redirectIfAuthenticated || '/tienda')
+                router.push(redirectIfAuthenticated || '/')
             } else {
                 // Si success es false, mostrar el mensaje de error
                 setErrors({
@@ -106,7 +106,7 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
                     localStorage.setItem('auth_user', JSON.stringify(response.data.data))
                 }
                 await mutate()
-                router.push(redirectIfAuthenticated || '/tienda')
+                router.push(redirectIfAuthenticated || '/')
             } else {
                 // Si success es false, mostrar el mensaje de error
                 setErrors({

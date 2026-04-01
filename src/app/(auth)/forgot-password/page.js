@@ -12,7 +12,7 @@ import AuthSessionStatus from '@/app/(auth)/AuthSessionStatus'
 const Page = () => {
     const { forgotPassword } = useAuth({
         middleware: 'guest',
-        redirectIfAuthenticated: '/tienda',
+        redirectIfAuthenticated: '/',
     })
 
     const [email, setEmail] = useState('')

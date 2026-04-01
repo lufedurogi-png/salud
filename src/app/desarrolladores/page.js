@@ -116,7 +116,7 @@ export default function DesarrolladoresPage() {
                             <span>Integrantes registrados: {Array.isArray(devs) ? devs.length : 0}</span>
                         </div>
                         <div className="mt-4 text-xs text-[#FF8000] font-medium">
-                            <Link href="/tienda" className="inline-flex items-center gap-1 hover:underline">
+                            <Link href="/" className="inline-flex items-center gap-1 hover:underline">
                                 <span aria-hidden>←</span>
                                 <span>Regresar a la tienda</span>
                             </Link>

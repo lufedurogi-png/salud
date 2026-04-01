@@ -792,7 +792,12 @@ export default function TiendaClient({ initialData = {} }) {
                     <div className={`pb-10 border-b px-2 ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                         <div className="flex justify-center items-center">
                             <div className="flex justify-center sm:col-span-1 lg:col-span-1 lg:justify-self-center">
-                                <Link href="/" className="shrink-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF8000] p-2 flex items-center">
+                                <Link
+                                    href="https://nxt.it.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="shrink-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF8000] p-2 flex items-center"
+                                >
                                     <Image
                                         src="/Imagenes/logo_nxtIt.png"
                                         alt="NXT.IT"
@@ -854,7 +859,7 @@ export default function TiendaClient({ initialData = {} }) {
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href="/tienda" className="hover:text-[#FF8000] transition-colors">
+                                    <Link href="/" className="hover:text-[#FF8000] transition-colors">
                                         Tienda
                                     </Link>
                                 </li>

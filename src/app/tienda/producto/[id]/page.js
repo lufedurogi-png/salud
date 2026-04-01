@@ -10,7 +10,7 @@ export default async function PageProducto({ params, searchParams }) {
             <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold mb-4">Producto no encontrado</h1>
-                    <a href="/tienda" className="text-[#FF8000] hover:underline">
+                    <a href="/" className="text-[#FF8000] hover:underline">
                         Volver a la tienda
                     </a>
                 </div>

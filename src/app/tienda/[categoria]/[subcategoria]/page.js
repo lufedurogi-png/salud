@@ -25,7 +25,7 @@ export default async function PageSubcategoria({ params, searchParams }) {
                 <div className="text-center">
                     <h1 className="text-4xl font-bold mb-4">404 | NOT FOUND</h1>
                     <p className="mb-4">Categoría o subcategoría no encontrada</p>
-                    <a href="/tienda" className="text-[#FF8000] hover:underline">
+                    <a href="/" className="text-[#FF8000] hover:underline">
                         Volver a la tienda
                     </a>
                 </div>

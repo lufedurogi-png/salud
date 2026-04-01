@@ -56,7 +56,7 @@ export default function TiendaNavHeader({ darkMode, setDarkMode }) {
         }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16 gap-4">
-                        <Link href="/tienda" className="flex items-center shrink-0">
+                        <Link href="/" className="flex items-center shrink-0">
                             <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={120} height={40} className="h-8 w-auto" />
                         </Link>
                         <div className="hidden sm:block flex-1 max-w-md">
@@ -128,7 +128,7 @@ export default function TiendaNavHeader({ darkMode, setDarkMode }) {
                             )}
                         </Link>
                         <Link
-                            href="/tienda"
+                            href="/"
                             className={`transition-colors font-medium ${darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'}`}
                         >
                             Tienda
