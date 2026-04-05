@@ -21,6 +21,8 @@ const CATEGORIAS_FALLBACK = [
     { id: 'componentes', nombre: 'Componentes', subcategorias: [] },
     { id: 'impresoras', nombre: 'Impresoras', subcategorias: [] },
     { id: 'pcs', nombre: "PC's / Computadoras", subcategorias: [] },
+    { id: 'infraestructura_servidores', nombre: 'Infraestructura y servidores', subcategorias: [] },
+    { id: 'software_polizas', nombre: 'Software y polizas', subcategorias: [] },
     { id: 'otros', nombre: 'Otros', subcategorias: [] },
 ]
 

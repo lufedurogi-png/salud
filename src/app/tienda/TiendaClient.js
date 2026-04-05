@@ -165,6 +165,8 @@ export default function TiendaClient({ initialData = {} }) {
         componentes: '/Imagenes/icon_componentes.png',
         impresoras: '/Imagenes/icon_impresora.png',
         pcs: '/Imagenes/icon_computadora.png',
+        infraestructura_servidores: encodeURI('/Imagenes/icon_infraestructura y servidores.png'),
+        software_polizas: '/Imagenes/icon_software.png',
         otros: '/Imagenes/icon_otros.png',
     }
     const categorias = [

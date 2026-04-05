@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/auth'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -14,6 +15,13 @@ import { fetchCotizacionesGuardadas, fetchCotizacionesPapelera, moveCotizacionTo
 import { downloadCotizacionPdf } from '@/lib/cotizacionPdf'
 import { formatPrecio } from '@/lib/productos'
 import CheckoutModal from '@/components/CheckoutModal'
+import {
+    syncCartItems,
+    createPayPalOrder,
+    capturePayPalOrder,
+    checkoutCart,
+    PAYPAL_POST_CAPTURE_META_KEY,
+} from '@/lib/carrito'
 import ChatVentasCliente from '@/components/ChatVentasCliente'
 import PrivacyNoticeReader from '@/components/PrivacyNoticeReader'
 
@@ -32,7 +40,25 @@ function getPaginationWindow(currentPage, totalPages) {
     return { windowPages, showEllipsis, showLastPage: true }
 }
 
-const Dashboard = () => {
+/** Ítems de cotización guardada → líneas { clave, cantidad } respetando stock mostrado en UI. */
+function lineasCotizacionParaSync(items) {
+    const list = items || []
+    const out = []
+    for (const i of list) {
+        const stockRaw = i.totalStock
+        const stock = stockRaw != null ? Number(stockRaw) : -1
+        const sinStock = stock === 0
+        const qty = sinStock ? 0 : (stock < 0 ? (Number(i.cantidad) || 1) : Math.min(Number(i.cantidad) || 1, stock))
+        if (!sinStock && qty >= 1 && i.clave) {
+            out.push({ clave: i.clave, cantidad: qty })
+        }
+    }
+    return out
+}
+
+function DashboardInner() {
+    const router = useRouter()
+    const searchParams = useSearchParams()
     const { user, logout } = useAuth({ middleware: 'auth' })
     const [darkMode, setDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -53,6 +79,10 @@ const Dashboard = () => {
                 setActiveTab(tab)
             }
         }
+    }, [])
+
+    useEffect(() => {
+        setDashboardMounted(true)
     }, [])
     const [hoveredTab, setHoveredTab] = useState(null)
     
@@ -516,8 +546,10 @@ const Dashboard = () => {
     const [confirmEliminarCotizacionId, setConfirmEliminarCotizacionId] = useState(null)
     const [showPapeleraCotizacionesVaciaModal, setShowPapeleraCotizacionesVaciaModal] = useState(false)
     const [pagarCotizacionModalOpen, setPagarCotizacionModalOpen] = useState(false)
+    const [cotizacionIdParaPagar, setCotizacionIdParaPagar] = useState(null)
     const [checkoutCotizacionLoading, setCheckoutCotizacionLoading] = useState(false)
     const [checkoutCotizacionError, setCheckoutCotizacionError] = useState(null)
+    const [dashboardMounted, setDashboardMounted] = useState(false)
     const [metodoPagoCotizacion, setMetodoPagoCotizacion] = useState('Efectivo')
     const [cotizacionPaginaActual, setCotizacionPaginaActual] = useState(1)
     const COTIZACION_POR_PAGINA = 3
@@ -608,6 +640,162 @@ const Dashboard = () => {
             setCotizacionesGuardadas(getCotizacionesGuardadas(user?.id))
         }
     }, [user?.id])
+
+    const confirmarPagoCotizacion = useCallback(async (payload) => {
+        if (!cotizacionIdParaPagar) {
+            setCheckoutCotizacionError('No hay cotización seleccionada.')
+            return
+        }
+        const cot = cotizacionesGuardadas.find((c) => c.id === cotizacionIdParaPagar)
+        if (!cot) {
+            setCheckoutCotizacionError('No se encontró la cotización.')
+            return
+        }
+        if (!isLoggedInUserId(user?.id)) {
+            setCheckoutCotizacionError('El pago en línea solo está disponible con tu cuenta sincronizada.')
+            return
+        }
+        if (!payload?.metodoPago) {
+            setCheckoutCotizacionError('Elige un método de pago.')
+            return
+        }
+        if (payload.direccionId == null || payload.facturacionId == null) {
+            setCheckoutCotizacionError('Selecciona dirección de envío y datos de facturación en las pestañas del modal.')
+            return
+        }
+        const direccionEnvioId = Number(payload.direccionId)
+        const datosFacturacionId = Number(payload.facturacionId)
+        if (!Number.isInteger(direccionEnvioId) || direccionEnvioId < 1) {
+            setCheckoutCotizacionError('La dirección de envío seleccionada no es válida.')
+            return
+        }
+        if (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1) {
+            setCheckoutCotizacionError('Los datos de facturación seleccionados no son válidos.')
+            return
+        }
+        const lineas = lineasCotizacionParaSync(cot.items || [])
+        if (lineas.length === 0) {
+            setCheckoutCotizacionError('No hay productos con stock para pagar.')
+            return
+        }
+
+        setCheckoutCotizacionError(null)
+        setCheckoutCotizacionLoading(true)
+        try {
+            await syncCartItems(lineas)
+            const base =
+                typeof window !== 'undefined'
+                    ? `${window.location.origin}/dashboard`
+                    : '/dashboard'
+            const returnUrl = `${base}?tab=pedidos&paypal_ok=1`
+            const cancelUrl = `${base}?tab=cotizaciones&paypal_cancel=1`
+
+            if (payload.metodoPago === 'mercadopago') {
+                setCheckoutCotizacionError('Mercado Pago estará disponible próximamente.')
+                return
+            }
+
+            if (payload.metodoPago === 'paypal') {
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem(
+                        PAYPAL_POST_CAPTURE_META_KEY,
+                        JSON.stringify({ source: 'cotizacion-dashboard', cotizacionId: cot.id })
+                    )
+                }
+                const { approve_url: approveUrl } = await createPayPalOrder({
+                    return_url: returnUrl,
+                    cancel_url: cancelUrl,
+                    direccion_envio_id: direccionEnvioId,
+                    datos_facturacion_id: datosFacturacionId,
+                })
+                if (typeof window !== 'undefined' && approveUrl) {
+                    window.location.assign(approveUrl)
+                }
+                return
+            }
+
+            if (payload.metodoPago === 'tarjeta') {
+                await checkoutCart({
+                    metodo_pago: 'tarjeta',
+                    direccion_envio_id: direccionEnvioId,
+                    datos_facturacion_id: datosFacturacionId,
+                })
+                await handleMoverCotizacionAPapelera(cot.id)
+                setPagarCotizacionModalOpen(false)
+                setCotizacionIdParaPagar(null)
+                setActiveTab('pedidos')
+                await fetchPedidos()
+                return
+            }
+
+            setCheckoutCotizacionError('Método de pago no soportado.')
+        } catch (err) {
+            setCheckoutCotizacionError(err?.message || err?.response?.data?.message || 'Error al procesar el pago')
+        } finally {
+            setCheckoutCotizacionLoading(false)
+        }
+    }, [cotizacionIdParaPagar, cotizacionesGuardadas, user?.id, handleMoverCotizacionAPapelera, fetchPedidos])
+
+    useEffect(() => {
+        if (!dashboardMounted) return
+        if (searchParams.get('paypal_cancel') === '1') {
+            setCheckoutCotizacionError('Pago cancelado en PayPal.')
+            try {
+                sessionStorage.removeItem(PAYPAL_POST_CAPTURE_META_KEY)
+            } catch { /* ignore */ }
+            router.replace('/dashboard?tab=cotizaciones', { scroll: false })
+            return
+        }
+        if (searchParams.get('paypal_ok') !== '1') return
+        const orderId = searchParams.get('token')
+        if (!orderId) {
+            setCheckoutCotizacionError('No se recibió la orden de PayPal.')
+            router.replace('/dashboard?tab=pedidos', { scroll: false })
+            return
+        }
+        if (typeof window === 'undefined') return
+
+        const doneKey = `paypal_capture_done_${orderId}`
+        if (sessionStorage.getItem(doneKey)) {
+            router.replace('/dashboard?tab=pedidos', { scroll: false })
+            return
+        }
+        const lockKey = `paypal_capture_lock_${orderId}`
+        if (sessionStorage.getItem(lockKey)) return
+        sessionStorage.setItem(lockKey, '1')
+        ;(async () => {
+            setCheckoutCotizacionLoading(true)
+            setCheckoutCotizacionError(null)
+            try {
+                await capturePayPalOrder(orderId)
+                sessionStorage.setItem(doneKey, '1')
+                sessionStorage.removeItem(lockKey)
+                let meta = null
+                try {
+                    meta = JSON.parse(sessionStorage.getItem(PAYPAL_POST_CAPTURE_META_KEY) || 'null')
+                } catch {
+                    meta = null
+                }
+                sessionStorage.removeItem(PAYPAL_POST_CAPTURE_META_KEY)
+                if (meta?.source === 'cotizacion-dashboard' && meta.cotizacionId != null) {
+                    await handleMoverCotizacionAPapelera(meta.cotizacionId)
+                }
+                setCotizacionIdParaPagar(null)
+                setPagarCotizacionModalOpen(false)
+                setActiveTab('pedidos')
+                await fetchPedidos()
+                router.replace('/dashboard?tab=pedidos', { scroll: false })
+            } catch (e) {
+                sessionStorage.removeItem(lockKey)
+                setCheckoutCotizacionError(
+                    e?.message || e?.response?.data?.message || 'Error al confirmar PayPal'
+                )
+                setPagarCotizacionModalOpen(true)
+            } finally {
+                setCheckoutCotizacionLoading(false)
+            }
+        })()
+    }, [dashboardMounted, searchParams, router, handleMoverCotizacionAPapelera, fetchPedidos])
 
     const handleRestaurarCotizacion = useCallback(async (id) => {
         setPapeleraCotizaciones((prev) => prev.filter((c) => c.id !== id))
@@ -1530,7 +1718,11 @@ const Dashboard = () => {
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setPagarCotizacionModalOpen(true)}
+                                                            onClick={() => {
+                                                                setCotizacionIdParaPagar(cot.id)
+                                                                setCheckoutCotizacionError(null)
+                                                                setPagarCotizacionModalOpen(true)
+                                                            }}
                                                             className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium bg-[#FF8000] hover:bg-[#e67300] text-white transition-colors"
                                                         >
                                                             <div className="relative w-4 h-4 shrink-0">
@@ -2822,20 +3014,13 @@ const Dashboard = () => {
 
             <CheckoutModal
                 open={pagarCotizacionModalOpen}
-                onClose={() => !checkoutCotizacionLoading && setPagarCotizacionModalOpen(false)}
-                darkMode={darkMode}
-                onConfirm={(payload) => {
-                    setCheckoutCotizacionLoading(true)
-                    setCheckoutCotizacionError(null)
-                    try {
-                        // TODO: enviar payload al backend para convertir cotización en pedido
-                        setPagarCotizacionModalOpen(false)
-                    } catch (err) {
-                        setCheckoutCotizacionError(err?.message || 'Error al crear el pedido')
-                    } finally {
-                        setCheckoutCotizacionLoading(false)
-                    }
+                onClose={() => {
+                    if (checkoutCotizacionLoading) return
+                    setPagarCotizacionModalOpen(false)
+                    setCotizacionIdParaPagar(null)
                 }}
+                darkMode={darkMode}
+                onConfirm={confirmarPagoCotizacion}
                 loading={checkoutCotizacionLoading}
                 error={checkoutCotizacionError}
             />
@@ -2843,4 +3028,16 @@ const Dashboard = () => {
     )
 }
 
-export default Dashboard
+export default function Dashboard() {
+    return (
+        <Suspense
+            fallback={(
+                <div className="min-h-screen bg-gray-900 flex items-center justify-center text-gray-400 text-sm">
+                    Cargando panel…
+                </div>
+            )}
+        >
+            <DashboardInner />
+        </Suspense>
+    )
+}

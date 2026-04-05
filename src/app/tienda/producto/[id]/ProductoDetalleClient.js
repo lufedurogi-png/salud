@@ -414,15 +414,14 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                                     </div>
                                 </div>
                             </div>
-                            {(producto.garantia || producto.clave || producto.codigo_fabricante) && (
+                            {(producto.garantia || producto.codigo_fabricante) && (
                                 <div className={`flex flex-col gap-1 pt-3 mt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} xl:flex-row xl:items-center xl:gap-4`}>
                                     {producto.garantia && (
                                         <p className={`text-xs ${textMuted}`}><span className="font-medium">Garantía:</span> {producto.garantia}</p>
                                     )}
-                                    {(producto.clave || producto.codigo_fabricante) && (
+                                    {producto.codigo_fabricante && (
                                         <p className={`text-xs ${textMuted}`}>
-                                            {producto.clave && <><span className="font-medium">Clave:</span> {producto.clave}</>}
-                                            {producto.codigo_fabricante && <><span className="font-medium xl:ml-2">Cód. fabricante:</span> {producto.codigo_fabricante}</>}
+                                            <span className="font-medium">Cód. fabricante:</span> {producto.codigo_fabricante}
                                         </p>
                                     )}
                                 </div>
@@ -447,16 +446,21 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                     )}
                     {((producto.raw_data && Object.keys(producto.raw_data).length > 0) || (producto.especificaciones_tecnicas && Array.isArray(producto.especificaciones_tecnicas) && producto.especificaciones_tecnicas.length > 0) || (producto.dimensiones && Array.isArray(producto.dimensiones) && producto.dimensiones.length > 0)) && (() => {
                         // Campos propios del sistema/API que no se muestran en Información general
-                        const CAMPOS_OCULTOS_GENERAL = ['id', 'requiere_serie', 'grupo', 'disponible', 'principal', 'brand_image', 'imagen', 'moneda', 'precio']
+                        const CAMPOS_OCULTOS_GENERAL = ['id', 'requiere_serie', 'grupo', 'disponible', 'principal', 'brand_image', 'imagen', 'moneda', 'precio', 'clave']
                         const esCampoOculto = (k) => CAMPOS_OCULTOS_GENERAL.includes(String(k).toLowerCase())
+                        const esFilaClave = (nombre) => String(nombre || '').toLowerCase().trim() === 'clave'
                         // Información general: raw_data sin objetos ni null y sin campos internos
                         const entradasGenerales = producto.raw_data
                             ? Object.entries(producto.raw_data).filter(([k, v]) => v != null && typeof v !== 'object' && !esCampoOculto(k))
                             : []
                         // Especificaciones técnicas: del endpoint informacion_tecnica de CVA
-                        const especificaciones = Array.isArray(producto.especificaciones_tecnicas) ? producto.especificaciones_tecnicas : []
+                        const especificaciones = (Array.isArray(producto.especificaciones_tecnicas) ? producto.especificaciones_tecnicas : []).filter(
+                            (spec) => !esFilaClave(spec?.nombre)
+                        )
                         // Dimensiones: del endpoint dimensiones de CVA
-                        const dimensiones = Array.isArray(producto.dimensiones) ? producto.dimensiones : []
+                        const dimensiones = (Array.isArray(producto.dimensiones) ? producto.dimensiones : []).filter(
+                            (row) => !esFilaClave(row?.nombre)
+                        )
                         if (entradasGenerales.length === 0 && especificaciones.length === 0 && dimensiones.length === 0) return null
                         // Formato de etiqueta: "marca" → "Marca", "CAPACIDAD DE POTENCIA" → "Capacidad de potencia"
                         const palabrasMinusculas = new Set(['de', 'del', 'la', 'el', 'y', 'a', 'e', 'o', 'u', 'en', 'con', 'al', 'los', 'las', 'un', 'una', 'por', 'para', 'al', 'da', 'do'])

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/auth'
 import TiendaNavHeader from '@/components/TiendaNavHeader'
 import { getPorClaves, formatPrecio, resolveStorageUrl } from '@/lib/productos'
@@ -13,6 +13,13 @@ import LoginRequiredModal from '@/components/LoginRequiredModal'
 import { PrivacyNoticeModal } from '@/components/PrivacyNoticeReader'
 import { useTiendaDarkMode } from '@/hooks/useTiendaDarkMode'
 import CheckoutModal from '@/components/CheckoutModal'
+import {
+    syncCartItems,
+    createPayPalOrder,
+    capturePayPalOrder,
+    checkoutCart,
+    PAYPAL_POST_CAPTURE_META_KEY,
+} from '@/lib/carrito'
 
 const METODOS_PAGO = [
     { value: 'Efectivo', label: 'Efectivo' },
@@ -32,6 +39,7 @@ function getFirstImageUrl(producto) {
 
 export default function CotizacionesClient() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { user } = useAuth({ middleware: 'guest' })
     const { items: quoteItems, refresh, setCantidad: setCantidadCotizacion, clearItems, removeItem } = useCotizacion(user)
     const { darkMode, setDarkMode } = useTiendaDarkMode()
@@ -50,6 +58,13 @@ export default function CotizacionesClient() {
     const [privacyModalInvitadoOpen, setPrivacyModalInvitadoOpen] = useState(false)
     const [enviarInvitadoError, setEnviarInvitadoError] = useState(null)
     const [invitadoExitoMsg, setInvitadoExitoMsg] = useState(null)
+    const [mounted, setMounted] = useState(false)
+    const [hasToken, setHasToken] = useState(false)
+    useEffect(() => {
+        setHasToken(typeof window !== 'undefined' && !!localStorage.getItem('auth_token'))
+        setMounted(true)
+    }, [])
+    const isLogged = !!user || hasToken
 
     useEffect(() => {
         const claves = quoteItems.map((i) => i.clave)
@@ -153,7 +168,7 @@ export default function CotizacionesClient() {
     }
 
     const handlePagar = () => {
-        if (!user) {
+        if (!isLogged) {
             setLoginModalOpen(true)
             return
         }
@@ -161,8 +176,151 @@ export default function CotizacionesClient() {
         setPagarModal(true)
     }
 
-    // Pago real aún no implementado: no hace nada por ahora (igual que en carrito)
-    const handleConfirmarPedido = () => {}
+    const lineasParaSync = itemsConProducto
+        .filter((i) => !i.sinStock && (i.qtyEfectiva || 0) >= 1)
+        .map((i) => ({ clave: i.clave, cantidad: i.qtyEfectiva }))
+
+    const handleConfirmarPedido = async (payload) => {
+        if (!payload?.metodoPago) {
+            setCheckoutError('Elige un método de pago.')
+            return
+        }
+        if (payload.direccionId == null || payload.facturacionId == null) {
+            setCheckoutError('Selecciona dirección de envío y datos de facturación en las pestañas del modal.')
+            return
+        }
+        const direccionEnvioId = Number(payload.direccionId)
+        const datosFacturacionId = Number(payload.facturacionId)
+        if (!Number.isInteger(direccionEnvioId) || direccionEnvioId < 1) {
+            setCheckoutError('La dirección de envío seleccionada no es válida.')
+            return
+        }
+        if (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1) {
+            setCheckoutError('Los datos de facturación seleccionados no son válidos.')
+            return
+        }
+        if (lineasParaSync.length === 0) {
+            setCheckoutError('No hay productos con stock para pagar.')
+            return
+        }
+
+        setCheckoutError(null)
+        setCheckoutLoading(true)
+        try {
+            await syncCartItems(lineasParaSync)
+
+            const base =
+                typeof window !== 'undefined'
+                    ? `${window.location.origin}/tienda/cotizaciones`
+                    : '/tienda/cotizaciones'
+            const returnUrl = `${base}?paypal_ok=1`
+            const cancelUrl = `${base}?paypal_cancel=1`
+
+            if (payload.metodoPago === 'mercadopago') {
+                setCheckoutError('Mercado Pago estará disponible próximamente.')
+                return
+            }
+
+            if (payload.metodoPago === 'paypal') {
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem(
+                        PAYPAL_POST_CAPTURE_META_KEY,
+                        JSON.stringify({ source: 'cotizacion-tienda' })
+                    )
+                }
+                const { approve_url: approveUrl } = await createPayPalOrder({
+                    return_url: returnUrl,
+                    cancel_url: cancelUrl,
+                    direccion_envio_id: direccionEnvioId,
+                    datos_facturacion_id: datosFacturacionId,
+                })
+                if (typeof window !== 'undefined' && approveUrl) {
+                    window.location.assign(approveUrl)
+                }
+                return
+            }
+
+            if (payload.metodoPago === 'tarjeta') {
+                await checkoutCart({
+                    metodo_pago: 'tarjeta',
+                    direccion_envio_id: direccionEnvioId,
+                    datos_facturacion_id: datosFacturacionId,
+                })
+                clearItems()
+                refresh()
+                setPagarModal(false)
+                router.push('/dashboard?tab=pedidos')
+                return
+            }
+
+            setCheckoutError('Método de pago no soportado.')
+        } catch (err) {
+            setCheckoutError(err?.message || err?.response?.data?.message || 'Error al procesar el pago')
+        } finally {
+            setCheckoutLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (!mounted || !isLogged) return
+        if (searchParams.get('paypal_cancel') === '1') {
+            setCheckoutError('Pago cancelado en PayPal.')
+            try {
+                sessionStorage.removeItem(PAYPAL_POST_CAPTURE_META_KEY)
+            } catch { /* ignore */ }
+            router.replace('/tienda/cotizaciones', { scroll: false })
+            return
+        }
+        if (searchParams.get('paypal_ok') !== '1') return
+        const orderId = searchParams.get('token')
+        if (!orderId) {
+            setCheckoutError('No se recibió la orden de PayPal.')
+            router.replace('/tienda/cotizaciones', { scroll: false })
+            return
+        }
+        if (typeof window === 'undefined') return
+
+        const doneKey = `paypal_capture_done_${orderId}`
+        if (sessionStorage.getItem(doneKey)) {
+            router.replace('/tienda/cotizaciones', { scroll: false })
+            router.push('/dashboard?tab=pedidos')
+            return
+        }
+        const lockKey = `paypal_capture_lock_${orderId}`
+        if (sessionStorage.getItem(lockKey)) return
+        sessionStorage.setItem(lockKey, '1')
+        ;(async () => {
+            setCheckoutLoading(true)
+            setCheckoutError(null)
+            try {
+                await capturePayPalOrder(orderId)
+                sessionStorage.setItem(doneKey, '1')
+                sessionStorage.removeItem(lockKey)
+                let meta = null
+                try {
+                    meta = JSON.parse(sessionStorage.getItem(PAYPAL_POST_CAPTURE_META_KEY) || 'null')
+                } catch {
+                    meta = null
+                }
+                sessionStorage.removeItem(PAYPAL_POST_CAPTURE_META_KEY)
+                if (meta?.source === 'cotizacion-tienda') {
+                    clearItems()
+                    refresh()
+                }
+                router.replace('/tienda/cotizaciones', { scroll: false })
+                router.push('/dashboard?tab=pedidos')
+            } catch (e) {
+                sessionStorage.removeItem(lockKey)
+                setCheckoutError(
+                    e?.message || e?.response?.data?.message || 'Error al confirmar PayPal'
+                )
+                setPagarModal(true)
+            } finally {
+                setCheckoutLoading(false)
+            }
+        })()
+    // clearItems/refresh solo se usan dentro del async; no en deps (evita re-ejecuciones).
+    }, [mounted, isLogged, router, searchParams])
 
     const bg = darkMode ? 'bg-gray-900' : 'bg-gray-50'
     const textMuted = darkMode ? 'text-gray-400' : 'text-gray-600'
@@ -428,7 +586,7 @@ export default function CotizacionesClient() {
                             </div>
                         </div>
 
-                        {!user && (
+                        {!isLogged && (
                             <p className={`mt-4 text-sm ${textMuted}`}>
                                 Para pagar deberás iniciar sesión o registrarte.
                             </p>

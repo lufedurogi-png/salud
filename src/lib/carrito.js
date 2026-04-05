@@ -113,6 +113,38 @@ function apiErrorMessage(err, fallback) {
     return err?.message || fallback
 }
 
+/** sessionStorage: JSON { source: 'cotizacion-tienda' } | { source: 'cotizacion-dashboard', cotizacionId: number } */
+export const PAYPAL_POST_CAPTURE_META_KEY = 'paypal_post_capture_meta'
+
+/**
+ * Reemplaza el carrito en servidor con las líneas indicadas (clave + cantidad).
+ * Usado antes de crear la orden PayPal desde una cotización.
+ */
+export async function syncCartItems(lineas) {
+    const items = (lineas || [])
+        .map((i) => ({
+            clave: String(i.clave || '').trim(),
+            cantidad: Math.max(1, Math.min(9999, Number(i.cantidad) || 1)),
+        }))
+        .filter((i) => i.clave !== '')
+    if (items.length === 0) {
+        throw new Error('No hay productos válidos para sincronizar.')
+    }
+    try {
+        const { data } = await axios.post('/carrito/sync', { items })
+        if (data?.success && data?.data) {
+            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(CARRITO_CHANGE_EVENT))
+            return data.data
+        }
+        throw new Error(data?.message || 'No se pudo sincronizar el carrito')
+    } catch (err) {
+        if (err?.response || err?.isAxiosError) {
+            throw new Error(apiErrorMessage(err, 'No se pudo sincronizar el carrito'))
+        }
+        throw err
+    }
+}
+
 /** Crea orden PayPal (sandbox/live según API) y devuelve approve_url. */
 export async function createPayPalOrder({ return_url, cancel_url, direccion_envio_id, datos_facturacion_id }) {
     try {

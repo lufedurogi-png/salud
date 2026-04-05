@@ -11,6 +11,7 @@ import Label from '@/components/Label'
 import { getPaginationWindow } from '@/lib/pagination'
 import { swrFetcher } from '@/lib/swrFetcher'
 import { useDebounce } from '@/hooks/useDebounce'
+import { downloadInformeUsuariosXlsx } from '@/lib/adminUsuariosReportXlsx'
 
 function RoleBadge({ role, darkMode }) {
     const r = (role || '').toLowerCase()
@@ -74,6 +75,7 @@ export default function AdminGestionUsuarios() {
     const [showCreateConfirmModal, setShowCreateConfirmModal] = useState(false)
     const [createLoading, setCreateLoading] = useState(false)
     const [createSuccess, setCreateSuccess] = useState('')
+    const [reportXlsxLoading, setReportXlsxLoading] = useState(false)
     const USUARIOS_POR_PAGINA = 3
     const addRoleSelectRef = useRef(null)
 
@@ -564,14 +566,56 @@ export default function AdminGestionUsuarios() {
                                 <option value="seller">Vendedor</option>
                             </select>
                         </div>
-                        <div className="min-w-[180px]">
-                            <Label className={filterLabelClass}>Permiso</Label>
-                            <select value={filterPermission} onChange={(e) => setFilterPermission(e.target.value)} className={filterSelectClass}>
-                                <option value="">Todos</option>
-                                {permissions.map((p) => (
-                                    <option key={p.value} value={p.value}>{p.label}</option>
-                                ))}
-                            </select>
+                        <div className="flex flex-wrap items-end gap-3 min-w-0">
+                            <div className="min-w-[180px]">
+                                <Label className={filterLabelClass}>Permiso</Label>
+                                <select value={filterPermission} onChange={(e) => setFilterPermission(e.target.value)} className={filterSelectClass}>
+                                    <option value="">Todos</option>
+                                    {permissions.map((p) => (
+                                        <option key={p.value} value={p.value}>{p.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={reportXlsxLoading || users.length === 0}
+                                title={users.length === 0 ? 'No hay usuarios en el listado actual' : 'Descargar Excel (.xlsx) por tipo de usuario'}
+                                onClick={async () => {
+                                    if (!users.length) return
+                                    setReportXlsxLoading(true)
+                                    try {
+                                        await downloadInformeUsuariosXlsx(users, permissions)
+                                    } catch (e) {
+                                        console.error(e)
+                                        setActionMessage({ type: 'error', text: 'No se pudo generar el archivo Excel.' })
+                                        setTimeout(() => setActionMessage(null), 5000)
+                                    } finally {
+                                        setReportXlsxLoading(false)
+                                    }
+                                }}
+                                className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-semibold shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    darkMode
+                                        ? 'bg-emerald-600 text-white hover:bg-emerald-500 border border-emerald-500/50 shadow-emerald-900/30'
+                                        : 'bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-700/20 shadow-emerald-600/20'
+                                }`}
+                            >
+                                {reportXlsxLoading ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden>
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                        Generando…
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Generar informe Excel
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
