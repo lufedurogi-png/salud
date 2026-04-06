@@ -296,11 +296,11 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
             <TiendaNavHeader
                 darkMode={darkMode}
                 setDarkMode={setDarkMode}
-                onOpenLeftSidebar={tieneResultados ? () => setMobileFiltersOpen(true) : undefined}
+                onToggleLeftSidebar={tieneResultados ? () => setMobileFiltersOpen((v) => !v) : undefined}
             />
             <div className="relative flex">
                 {tieneResultados && !mobileFiltersOpen && (
-                    <div className="fixed left-0 top-0 bottom-0 z-[36] w-9 md:hidden" aria-hidden {...edgeStripProps} />
+                    <div className="fixed left-0 bottom-0 z-[36] w-9 md:hidden max-md:top-[var(--tienda-header-height)]" aria-hidden {...edgeStripProps} />
                 )}
                 {tieneResultados && mobileFiltersOpen && (
                     <button
@@ -311,17 +311,8 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                     />
                 )}
                 {tieneResultados && (
-                    <button
-                        type="button"
-                        className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
-                        onClick={() => setMobileFiltersOpen(true)}
-                    >
-                        Filtros
-                    </button>
-                )}
-                {tieneResultados && (
                     <aside
-                        className={`max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[min(20rem,90vw)] max-md:min-h-screen max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                        className={`max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:w-[min(20rem,90vw)] max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                             mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
                         } md:translate-x-0 w-64 min-h-screen shrink-0 border-r transition-colors duration-300 ${
                             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'

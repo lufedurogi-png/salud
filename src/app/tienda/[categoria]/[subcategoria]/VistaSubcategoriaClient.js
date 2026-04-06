@@ -121,6 +121,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
     }, [mobileFiltersOpen])
 
     const openMobileFilters = useCallback(() => setMobileFiltersOpen(true), [])
+    const toggleMobileDrawer = useCallback(() => setMobileFiltersOpen((v) => !v), [])
 
     const { edgeStripProps, drawerTouchProps } = useMobileLeftDrawerSwipe({
         isOpen: mobileFiltersOpen,
@@ -230,10 +231,10 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
         <div className={`min-h-screen transition-colors duration-300 ${
             darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
         }`}>
-            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} onOpenLeftSidebar={openMobileFilters} />
+            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} onToggleLeftSidebar={toggleMobileDrawer} />
             <div className="relative flex">
                 {!mobileFiltersOpen && (
-                    <div className="fixed left-0 top-0 bottom-0 z-[36] w-9 md:hidden" aria-hidden {...edgeStripProps} />
+                    <div className="fixed left-0 bottom-0 z-[36] w-9 md:hidden max-md:top-[var(--tienda-header-height)]" aria-hidden {...edgeStripProps} />
                 )}
                 {mobileFiltersOpen && (
                     <button
@@ -243,15 +244,8 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                         className="fixed inset-0 z-[35] bg-black/50 md:hidden"
                     />
                 )}
-                <button
-                    type="button"
-                    className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
-                    onClick={openMobileFilters}
-                >
-                    Filtros
-                </button>
                 <aside
-                    className={`max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[min(20rem,90vw)] max-md:min-h-screen max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                    className={`max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:w-[min(20rem,90vw)] max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                         mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
                     } md:translate-x-0 w-64 min-h-screen shrink-0 border-r transition-colors duration-300 ${
                     darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'

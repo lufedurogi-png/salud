@@ -157,6 +157,11 @@ export default function TiendaClient({ initialData = {} }) {
         setMobileFiltersOpen(true)
     }, [setSidebarRetraido])
 
+    const toggleMobileDrawer = useCallback(() => {
+        setSidebarRetraido(false)
+        setMobileFiltersOpen((v) => !v)
+    }, [setSidebarRetraido])
+
     const { edgeStripProps, drawerTouchProps } = useMobileLeftDrawerSwipe({
         isOpen: mobileFiltersOpen,
         onOpen: openMobileFilters,
@@ -212,11 +217,11 @@ export default function TiendaClient({ initialData = {} }) {
             style={darkMode ? { '--sidebar-bg': 'rgb(31 41 55)' } : undefined}
         >
             {/* Header: TiendaNavHeader incluye Cotizaciones (dropdown) y Chat con proveedor */}
-            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} onOpenLeftSidebar={openMobileFilters} />
+            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} onToggleLeftSidebar={toggleMobileDrawer} />
             <div className="flex relative">
                 {!mobileFiltersOpen && (
                     <div
-                        className="fixed left-0 top-0 bottom-0 z-[36] w-9 md:hidden"
+                        className="fixed left-0 bottom-0 z-[36] w-9 md:hidden max-md:top-[var(--tienda-header-height)]"
                         aria-hidden
                         {...edgeStripProps}
                     />
@@ -232,29 +237,28 @@ export default function TiendaClient({ initialData = {} }) {
                 {/* Overlay para cerrar el panel desplegable (móviles / clic fuera) */}
                 {openSubcategoryPanel && (
                     <div
-                        className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                        className="fixed inset-0 bg-black/50 z-40 md:hidden"
                         onClick={() => setOpenSubcategoryPanel(null)}
                         aria-hidden
                     />
                 )}
                 {openCotizacionesPanel && (
                     <div
-                        className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                        className="fixed inset-0 bg-black/50 z-40 md:hidden"
                         onClick={() => setOpenCotizacionesPanel(false)}
                         aria-hidden
                     />
                 )}
 
-                <button
-                    type="button"
-                    className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
-                    onClick={openMobileFilters}
+                {/* Columna sidebar + flyouts (md:left-full ancla subcategorías/cotizaciones al borde derecho de la barra) */}
+                <div
+                    className={`contents md:block md:relative md:shrink-0 ${
+                        sidebarRetraido ? 'md:w-16' : 'md:w-64'
+                    }`}
                 >
-                    Filtros
-                </button>
                 {/* Sidebar Izquierdo - Retráctil (mismo color que panel subcategorías: --sidebar-bg) */}
                 <aside
-                    className={`${sidebarRetraido ? 'md:w-16' : 'md:w-64'} max-md:w-[min(20rem,90vw)] max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:min-h-screen max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                    className={`w-full max-md:w-[min(20rem,90vw)] max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                         mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
                     } md:translate-x-0 min-h-screen border-r transition-all duration-300 relative z-10 ${
                         darkMode ? 'border-gray-700' : 'bg-white border-gray-200'
@@ -442,11 +446,11 @@ export default function TiendaClient({ initialData = {} }) {
                     </div>
                 </aside>
 
-                {/* Panel de subcategorías — ventana flotante al lado del sidebar (estilo viejo): fixed/absolute, posición left según sidebar */}
+                {/* Panel de subcategorías — móvil: modal; escritorio: anclado al borde derecho del sidebar (left-full), sin tapar la barra */}
                 {openSubcategoryPanel && !sidebarRetraido && (
                     <div
-                        className={`fixed lg:absolute left-4 right-4 top-0 w-auto max-w-[min(calc(100vw-2rem),24rem)] sm:max-w-none md:left-auto md:right-auto ${sidebarRetraido ? 'md:left-16' : 'md:left-64'} sm:w-96 lg:w-80 xl:w-96 max-h-[calc(100vh-2rem)] mt-4 lg:mt-0 z-50 transform transition-all duration-300 ease-in-out shadow-2xl translate-x-0 opacity-100 ${
-                            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                        className={`max-md:fixed max-md:inset-x-4 max-md:top-[var(--tienda-header-height)] max-md:mt-4 max-md:z-50 max-md:max-h-[min(85dvh,32rem)] max-md:overflow-hidden max-md:rounded-lg max-md:shadow-2xl md:absolute md:left-full md:top-0 md:ml-0 md:z-50 md:w-[min(28rem,calc(100vw-5rem))] md:max-h-[calc(100vh-2rem)] md:overflow-hidden md:rounded-r-xl md:rounded-l-none md:border md:border-l-0 md:shadow-2xl transition-all duration-300 ease-in-out ${
+                            darkMode ? 'max-md:border max-md:border-gray-700 bg-gray-800 md:border-gray-700' : 'max-md:border max-md:border-gray-200 bg-white md:border-gray-200'
                         }`}
                         style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
                     >
@@ -477,10 +481,12 @@ export default function TiendaClient({ initialData = {} }) {
                                         No hay subcategorías en esta categoría
                                     </p>
                                 ) : (
-                                    <div className={`grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-0 ${
-                                        darkMode ? 'border-gray-700' : 'border-gray-200'
-                                    }`}>
-                                        <div className={`border-b border-r ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                    <div
+                                        className={`grid gap-0 [grid-template-columns:repeat(auto-fill,minmax(10rem,1fr))] ${
+                                            darkMode ? 'border-gray-700' : 'border-gray-200'
+                                        }`}
+                                    >
+                                        <div className={`min-w-0 border-b border-r ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                             <Link
                                                 href={`/tienda/${encodeURIComponent(openSubcategoryPanel)}/ver-todo`}
                                                 prefetch
@@ -493,7 +499,7 @@ export default function TiendaClient({ initialData = {} }) {
                                             </Link>
                                         </div>
                                         {subcategoriasDeSeleccion.map((subcat, index) => (
-                                            <div key={index} className={`border-b border-r ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                            <div key={index} className={`min-w-0 border-b border-r ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                                 <Link
                                                     href={`/tienda/${encodeURIComponent(openSubcategoryPanel)}/${encodeURIComponent(subcat)}`}
                                                     prefetch
@@ -517,8 +523,8 @@ export default function TiendaClient({ initialData = {} }) {
                 {openCotizacionesPanel && !sidebarRetraido && (
                     <>
                     <div
-                        className={`fixed lg:absolute left-4 right-4 top-0 w-auto max-w-[min(calc(100vw-2rem),20rem)] md:left-auto md:right-auto ${sidebarRetraido ? 'md:left-16' : 'md:left-64'} md:w-72 max-h-[calc(100vh-2rem)] mt-4 lg:mt-0 z-50 transform transition-all duration-300 ease-in-out shadow-2xl translate-x-0 opacity-100 rounded-xl overflow-hidden ${
-                            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                        className={`max-md:fixed max-md:inset-x-4 max-md:top-[var(--tienda-header-height)] max-md:mt-4 max-md:z-50 max-md:max-h-[min(85dvh,28rem)] max-md:overflow-hidden max-md:rounded-xl max-md:shadow-2xl md:absolute md:left-full md:top-0 md:ml-0 md:z-50 md:w-72 md:max-h-[calc(100vh-2rem)] md:overflow-hidden md:rounded-r-xl md:rounded-l-none md:border md:border-l-0 md:shadow-2xl transition-all duration-300 ease-in-out ${
+                            darkMode ? 'max-md:border max-md:border-gray-700 bg-gray-800 md:border-gray-700' : 'max-md:border max-md:border-gray-200 bg-white md:border-gray-200'
                         }`}
                         style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
                     >
@@ -646,6 +652,7 @@ export default function TiendaClient({ initialData = {} }) {
                     )}
                     </>
                 )}
+                </div>
 
                 {/* Contenido Principal */}
                 <main className="flex-1 min-w-0 p-4 md:p-8">
