@@ -7,7 +7,6 @@ import Image from 'next/image'
 const Layout = ({ children }) => {
     // Mismo valor en servidor y primer render cliente (evita error de hidratación); se sincroniza con localStorage al montar.
     const [darkMode, setDarkMode] = useState(true)
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     useEffect(() => {
         try {
@@ -40,25 +39,20 @@ const Layout = ({ children }) => {
         return () => window.removeEventListener('storage', handleStorageChange)
     }, [])
 
-    useEffect(() => {
-        if (!mobileMenuOpen) return undefined
-        const previousOverflow = document.body.style.overflow
-        document.body.style.overflow = 'hidden'
-        return () => {
-            document.body.style.overflow = previousOverflow
-        }
-    }, [mobileMenuOpen])
+    const pill = `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
+        darkMode ? 'bg-gray-800/80 text-gray-200 hover:bg-gray-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+    }`
 
     return (
         <div className={`min-h-screen transition-colors duration-300 flex flex-col ${
             darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
         }`}>
             {/* Header */}
-            <header className={`sticky top-0 z-50 border-b transition-colors duration-300 flex-shrink-0 relative ${
+            <header className={`sticky top-0 z-50 border-b transition-colors duration-300 flex-shrink-0 ${
                 darkMode ? 'bg-gray-900/95 backdrop-blur-sm border-gray-800' : 'bg-white/95 backdrop-blur-sm border-gray-200'
-            }`} style={{ height: '4rem' }}>
+            }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
+                    <div className="hidden md:flex items-center justify-between h-16">
                         <Link href="/" className="flex items-center">
                             <Image
                                 src="/Imagenes/logo_en.png"
@@ -68,7 +62,7 @@ const Layout = ({ children }) => {
                                 className="h-8 w-auto"
                             />
                         </Link>
-                        <div className="hidden md:flex items-center space-x-4">
+                        <div className="flex items-center space-x-4">
                             {/* Toggle Modo Oscuro/Claro */}
                             <div className="flex items-center space-x-2">
                                 <div className="relative w-5 h-5">
@@ -128,68 +122,54 @@ const Layout = ({ children }) => {
                                 Tienda
                             </Link>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setMobileMenuOpen((o) => !o)}
-                            className={`md:hidden inline-flex items-center gap-1 rounded-md px-2 py-2 text-sm font-semibold ${darkMode ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}
-                            aria-expanded={mobileMenuOpen}
-                            aria-label="Menú"
-                        >
-                            Menú
-                            <svg className={`h-5 w-5 transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
+                    </div>
+
+                    {/* Móvil: controles siempre visibles arriba (sticky), sin desplegable */}
+                    <div className="md:hidden py-3 space-y-3">
+                        <div className="flex justify-center">
+                            <Link href="/" className="flex items-center">
+                                <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={110} height={36} className="h-8 w-auto" />
+                            </Link>
+                        </div>
+                        <div className={`flex flex-wrap items-center gap-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                            <div className={`flex flex-wrap items-center gap-2 ${pill}`}>
+                                <Image
+                                    src="/Imagenes/icon_modo.webp"
+                                    alt=""
+                                    width={18}
+                                    height={18}
+                                    className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const newMode = !darkMode
+                                        setDarkMode(newMode)
+                                        localStorage.setItem('darkMode', JSON.stringify(newMode))
+                                        window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
+                                    }}
+                                    className={`relative inline-flex h-6 w-12 shrink-0 items-center rounded-full transition-colors ${
+                                        darkMode ? 'bg-[#2b4e94]' : 'bg-gray-300'
+                                    }`}
+                                    aria-label="Cambiar tema"
+                                >
+                                    <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
+                                </button>
+                                <span className="text-xs font-medium">{darkMode ? 'Oscuro' : 'Claro'}</span>
+                            </div>
+                            <Link href="/" className={pill}>
+                                Inicio
+                            </Link>
+                            <Link href="/" className={pill}>
+                                Tienda
+                            </Link>
+                        </div>
                     </div>
                 </div>
-                {mobileMenuOpen && (
-                    <>
-                        <button
-                            type="button"
-                            aria-label="Cerrar menú"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="fixed inset-0 z-40 bg-black/50 md:hidden"
-                        />
-                        <div
-                            className={`md:hidden absolute left-0 right-0 top-full z-50 max-h-[min(80vh,420px)] overflow-y-auto border-b shadow-lg ${
-                                darkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
-                            }`}
-                        >
-                            <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
-                                <div className="flex items-center justify-between rounded-lg border border-gray-700/30 px-3 py-2">
-                                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Tema</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const newMode = !darkMode
-                                            setDarkMode(newMode)
-                                            localStorage.setItem('darkMode', JSON.stringify(newMode))
-                                            window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
-                                        }}
-                                        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                                            darkMode ? 'bg-[#2b4e94]' : 'bg-gray-300'
-                                        }`}
-                                        aria-label="Cambiar tema"
-                                    >
-                                        <span className={`inline-block h-5 w-5 rounded-full bg-white transition-transform ${darkMode ? 'translate-x-8' : 'translate-x-1'}`} />
-                                    </button>
-                                </div>
-                                <div className="flex flex-col divide-y divide-gray-700/20">
-                                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                                        Inicio
-                                    </Link>
-                                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                                        Tienda
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )}
             </header>
 
             {/* Contenido Principal: altura mínima para que la cortina/form lleguen hasta abajo en pantalla completa */}
-            <main className="flex-1 flex flex-col relative min-h-0 min-h-[calc(100vh-4rem)]">
+            <main className="flex-1 flex flex-col relative min-h-0 min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)]">
                 {children}
             </main>
 

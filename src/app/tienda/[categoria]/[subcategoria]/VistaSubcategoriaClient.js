@@ -8,6 +8,7 @@ import ProductCard from '@/components/ProductCard'
 import TiendaNavHeader from '@/components/TiendaNavHeader'
 import { getProductos, getFiltrosDinamicos } from '@/lib/productos'
 import { useTiendaDarkMode } from '@/hooks/useTiendaDarkMode'
+import { useMobileLeftDrawerSwipe } from '@/hooks/useMobileLeftDrawerSwipe'
 
 const RANGOS_PRECIO = [
     { value: '', label: 'Todos los precios', min: null, max: null },
@@ -119,6 +120,15 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
         }
     }, [mobileFiltersOpen])
 
+    const openMobileFilters = useCallback(() => setMobileFiltersOpen(true), [])
+
+    const { edgeStripProps, drawerTouchProps } = useMobileLeftDrawerSwipe({
+        isOpen: mobileFiltersOpen,
+        onOpen: openMobileFilters,
+        onClose: () => setMobileFiltersOpen(false),
+        enabled: true,
+    })
+
     // Sincronizar estado con URL cuando vuelves desde producto (navegación con filtros en query)
     const parsedKey = `${parsed.marca}|${parsed.precio}|${parsed.stock}|${JSON.stringify(parsed.filtros)}`
     useEffect(() => {
@@ -220,8 +230,11 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
         <div className={`min-h-screen transition-colors duration-300 ${
             darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
         }`}>
-            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
+            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} onOpenLeftSidebar={openMobileFilters} />
             <div className="relative flex">
+                {!mobileFiltersOpen && (
+                    <div className="fixed left-0 top-0 bottom-0 z-[36] w-9 md:hidden" aria-hidden {...edgeStripProps} />
+                )}
                 {mobileFiltersOpen && (
                     <button
                         type="button"
@@ -233,7 +246,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                 <button
                     type="button"
                     className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
-                    onClick={() => setMobileFiltersOpen(true)}
+                    onClick={openMobileFilters}
                 >
                     Filtros
                 </button>
@@ -242,7 +255,9 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                         mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
                     } md:translate-x-0 w-64 min-h-screen shrink-0 border-r transition-colors duration-300 ${
                     darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                }`}>
+                }`}
+                    {...drawerTouchProps}
+                >
                     <div className="p-6 space-y-8">
                         <div>
                             <h3 className={`text-sm font-bold uppercase mb-4 ${

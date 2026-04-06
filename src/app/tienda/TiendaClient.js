@@ -27,6 +27,7 @@ import { useCarritoCount } from '@/lib/carrito'
 import { useFavoritos } from '@/lib/favoritos'
 import { useCotizacion } from '@/lib/cotizaciones'
 import { getOrCreateGuestId } from '@/lib/guestId'
+import { useMobileLeftDrawerSwipe } from '@/hooks/useMobileLeftDrawerSwipe'
 
 export default function TiendaClient({ initialData = {} }) {
     const router = useRouter()
@@ -151,6 +152,18 @@ export default function TiendaClient({ initialData = {} }) {
         }
     }, [mobileFiltersOpen])
 
+    const openMobileFilters = useCallback(() => {
+        setSidebarRetraido(false)
+        setMobileFiltersOpen(true)
+    }, [setSidebarRetraido])
+
+    const { edgeStripProps, drawerTouchProps } = useMobileLeftDrawerSwipe({
+        isOpen: mobileFiltersOpen,
+        onOpen: openMobileFilters,
+        onClose: () => setMobileFiltersOpen(false),
+        enabled: true,
+    })
+
     /** Refetch en background cada 3 min para mantener datos actualizados sin saturar */
     useEffect(() => {
         const interval = setInterval(refetchTienda, 180000)
@@ -199,8 +212,15 @@ export default function TiendaClient({ initialData = {} }) {
             style={darkMode ? { '--sidebar-bg': 'rgb(31 41 55)' } : undefined}
         >
             {/* Header: TiendaNavHeader incluye Cotizaciones (dropdown) y Chat con proveedor */}
-            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
+            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} onOpenLeftSidebar={openMobileFilters} />
             <div className="flex relative">
+                {!mobileFiltersOpen && (
+                    <div
+                        className="fixed left-0 top-0 bottom-0 z-[36] w-9 md:hidden"
+                        aria-hidden
+                        {...edgeStripProps}
+                    />
+                )}
                 {mobileFiltersOpen && (
                     <button
                         type="button"
@@ -228,10 +248,7 @@ export default function TiendaClient({ initialData = {} }) {
                 <button
                     type="button"
                     className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
-                    onClick={() => {
-                        setSidebarRetraido(false)
-                        setMobileFiltersOpen(true)
-                    }}
+                    onClick={openMobileFilters}
                 >
                     Filtros
                 </button>
@@ -243,6 +260,7 @@ export default function TiendaClient({ initialData = {} }) {
                         darkMode ? 'border-gray-700' : 'bg-white border-gray-200'
                     }`}
                     style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
+                    {...drawerTouchProps}
                 >
                     {/* Botón para retraer/expandir */}
                     <button

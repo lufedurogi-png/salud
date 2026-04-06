@@ -9,6 +9,7 @@ import TiendaNavHeader from '@/components/TiendaNavHeader'
 import { getCatalogEstado, getFiltrosDinamicosBusqueda, getProductos } from '@/lib/productos'
 import { getBusqueda, getBusquedaSessionId } from '@/lib/busqueda'
 import { useTiendaDarkMode } from '@/hooks/useTiendaDarkMode'
+import { useMobileLeftDrawerSwipe } from '@/hooks/useMobileLeftDrawerSwipe'
 
 const emptyResult = {
     busqueda_id: 0,
@@ -87,6 +88,13 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
             document.body.style.overflow = previousOverflow
         }
     }, [mobileFiltersOpen])
+
+    const { edgeStripProps, drawerTouchProps } = useMobileLeftDrawerSwipe({
+        isOpen: mobileFiltersOpen,
+        onOpen: () => setMobileFiltersOpen(true),
+        onClose: () => setMobileFiltersOpen(false),
+        enabled: (resultadoBusqueda?.productos?.length ?? 0) > 0,
+    })
 
     useEffect(() => {
         const q = typeof querySearch === 'string' ? querySearch.trim() : ''
@@ -285,8 +293,15 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
 
     return (
         <div className={`min-h-screen transition-colors duration-300 ${bg} ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-            <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
+            <TiendaNavHeader
+                darkMode={darkMode}
+                setDarkMode={setDarkMode}
+                onOpenLeftSidebar={tieneResultados ? () => setMobileFiltersOpen(true) : undefined}
+            />
             <div className="relative flex">
+                {tieneResultados && !mobileFiltersOpen && (
+                    <div className="fixed left-0 top-0 bottom-0 z-[36] w-9 md:hidden" aria-hidden {...edgeStripProps} />
+                )}
                 {tieneResultados && mobileFiltersOpen && (
                     <button
                         type="button"
@@ -311,6 +326,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                         } md:translate-x-0 w-64 min-h-screen shrink-0 border-r transition-colors duration-300 ${
                             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                         }`}
+                        {...drawerTouchProps}
                     >
                         <div className="p-6 space-y-8">
                             <div>
