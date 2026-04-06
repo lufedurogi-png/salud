@@ -16,6 +16,7 @@ import { useProductosByClaves } from '@/hooks/useProductosChunked'
 export default function TiendaNavHeader({ darkMode, setDarkMode }) {
     const { user, logout } = useAuth({ middleware: 'guest' })
     const [userDropdownOpen, setUserDropdownOpen] = useState(false)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [hasToken, setHasToken] = useState(false)
     useEffect(() => {
         setHasToken(typeof window !== 'undefined' && !!localStorage.getItem('auth_token'))
@@ -41,6 +42,15 @@ export default function TiendaNavHeader({ darkMode, setDarkMode }) {
         return () => document.removeEventListener('click', handleClickOutside)
     }, [userDropdownOpen])
 
+    useEffect(() => {
+        if (!mobileMenuOpen) return undefined
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [mobileMenuOpen])
+
     const toggleDark = () => {
         const next = !darkMode
         setDarkMode(next)
@@ -55,11 +65,11 @@ export default function TiendaNavHeader({ darkMode, setDarkMode }) {
             darkMode ? 'bg-gray-900/95 backdrop-blur-sm border-gray-800' : 'bg-white/95 backdrop-blur-sm border-gray-200'
         }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16 gap-4">
+                    <div className="hidden md:flex items-center justify-between h-16 gap-4">
                         <Link href="/" className="flex items-center shrink-0">
                             <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={120} height={40} className="h-8 w-auto" />
                         </Link>
-                        <div className="hidden sm:block flex-1 max-w-md">
+                        <div className="flex-1 max-w-md">
                             <SearchBar darkMode={darkMode} />
                         </div>
                     <div className="flex items-center gap-4 sm:gap-6 shrink-0">
@@ -204,7 +214,123 @@ export default function TiendaNavHeader({ darkMode, setDarkMode }) {
                         )}
                     </div>
                 </div>
+
+                <div className="md:hidden h-16 flex items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setMobileMenuOpen(true)}
+                        className={`inline-flex items-center justify-center rounded-md p-2 transition-colors ${
+                            darkMode ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                        aria-label="Abrir navegación"
+                    >
+                        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <Link href="/" className="flex items-center shrink-0">
+                        <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={108} height={36} className="h-8 w-auto" />
+                    </Link>
+                    <Link
+                        href="/tienda/carrito"
+                        className={`relative inline-flex items-center justify-center rounded-md p-2 transition-colors ${
+                            darkMode ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                        aria-label="Carrito"
+                    >
+                        <Image
+                            src="/Imagenes/icon_carrito.png"
+                            alt=""
+                            width={22}
+                            height={22}
+                            className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`}
+                        />
+                        {cartCount > 0 && (
+                            <span className="absolute -right-1 -top-1 flex items-center justify-center min-w-[1.05rem] h-4 px-1 rounded-full bg-[#FF8000] text-white text-[10px] font-semibold">
+                                {cartCount > 99 ? '99+' : cartCount}
+                            </span>
+                        )}
+                    </Link>
+                </div>
             </div>
+
+            {mobileMenuOpen && (
+                <>
+                    <button
+                        type="button"
+                        aria-label="Cerrar menú"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                    />
+                    <aside
+                        className={`fixed left-0 top-0 z-50 h-screen w-[86%] max-w-sm p-4 overflow-y-auto shadow-xl md:hidden ${
+                            darkMode ? 'bg-gray-900 border-r border-gray-800' : 'bg-white border-r border-gray-200'
+                        }`}
+                    >
+                        <div className="mb-4 flex items-center justify-between">
+                            <Link href="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                                <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={110} height={36} className="h-8 w-auto" />
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`rounded-md p-2 ${darkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}
+                                aria-label="Cerrar navegación"
+                            >
+                                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="mb-4">
+                            <SearchBar darkMode={darkMode} className="max-w-none" />
+                        </div>
+                        <div className="mb-4 flex items-center justify-between rounded-lg px-3 py-2 border border-gray-700/40">
+                            <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Tema</span>
+                            <button
+                                onClick={toggleDark}
+                                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
+                                    darkMode ? 'bg-[#2b4e94]' : 'bg-gray-300'
+                                }`}
+                                aria-label="Cambiar tema"
+                            >
+                                <span className={`inline-block h-5 w-5 rounded-full bg-white transition-transform duration-300 ${darkMode ? 'translate-x-8' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        <nav className="flex flex-col divide-y divide-gray-700/30">
+                            <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Tienda</Link>
+                            <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Inicio</Link>
+                            {user && (
+                                <Link href="/favoritos" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    Favoritos {favoritosCount > 0 ? `(${favoritosCount > 99 ? '99+' : favoritosCount})` : ''}
+                                </Link>
+                            )}
+                            <Link href="/tienda/carrito" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                Carrito {cartCount > 0 ? `(${cartCount > 99 ? '99+' : cartCount})` : ''}
+                            </Link>
+                            {user ? (
+                                <>
+                                    <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Home</Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMobileMenuOpen(false)
+                                            logout()
+                                        }}
+                                        className={`py-3 text-left font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}
+                                    >
+                                        Cerrar sesión
+                                    </button>
+                                </>
+                            ) : (
+                                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    Iniciar sesión
+                                </Link>
+                            )}
+                        </nav>
+                    </aside>
+                </>
+            )}
         </header>
     )
 }

@@ -27,7 +27,7 @@ const RootLayout = ({ children }) => {
             suppressHydrationWarning
             className={`${nunitoFont.className} ${playfairDisplay.variable} ${vt323.variable}`}
         >
-            <body className="antialiased bg-gray-950" suppressHydrationWarning>
+            <body className="antialiased bg-gray-950 w-full overflow-x-hidden" suppressHydrationWarning>
                 {children}
             </body>
         </html>
@@ -41,6 +41,12 @@ export const metadata = {
         shortcut: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
         apple: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
     },
+}
+
+export const viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
 }
 
 export default RootLayout

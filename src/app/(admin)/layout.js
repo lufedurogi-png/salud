@@ -25,6 +25,7 @@ export default function AdminLayout({ children }) {
     const { user, logout } = useAdminAuth({ middleware: 'auth' })
     const [darkMode, setDarkMode] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
     const [adminMenuOpen, setAdminMenuOpen] = useState(false)
     const adminMenuRef = useRef(null)
@@ -73,6 +74,15 @@ export default function AdminLayout({ children }) {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
+    useEffect(() => {
+        if (!mobileSidebarOpen) return undefined
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [mobileSidebarOpen])
+
     // Mostrar "Cargando..." solo después de montar para evitar hydration mismatch (server no tiene user/localStorage)
     if (mounted && !user && typeof window !== 'undefined' && localStorage.getItem('auth_token')) {
         return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Cargando...</div>
@@ -81,9 +91,19 @@ export default function AdminLayout({ children }) {
     return (
         <div className={`min-h-screen flex transition-colors ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
             {/* Sidebar */}
+            {mobileSidebarOpen && (
+                <button
+                    type="button"
+                    aria-label="Cerrar navegación"
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="fixed inset-0 z-30 bg-black/50 md:hidden"
+                />
+            )}
             <aside className={`fixed left-0 top-0 z-40 h-screen transition-all duration-300 flex flex-col ${
                 sidebarOpen ? 'w-64' : 'w-20'
-            } ${darkMode ? 'bg-gray-800 border-r border-gray-700' : 'bg-white border-r border-gray-200'}`}>
+            } ${darkMode ? 'bg-gray-800 border-r border-gray-700' : 'bg-white border-r border-gray-200'} ${
+                mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            } md:translate-x-0`}>
                 <div className={`flex items-center justify-between h-16 px-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center gap-2 min-w-0">
                         <Image
@@ -99,7 +119,7 @@ export default function AdminLayout({ children }) {
                             </span>
                         )}
                     </div>
-                    <button onClick={() => setSidebarOpen((s) => !s)} className="p-2 rounded hover:bg-gray-700">
+                    <button onClick={() => setSidebarOpen((s) => !s)} className="hidden md:inline-flex p-2 rounded hover:bg-gray-700">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
@@ -173,13 +193,23 @@ export default function AdminLayout({ children }) {
                 </nav>
             </aside>
 
-            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ml-0 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
                 {/* Barra superior tipo Laravel */}
-                <header className={`sticky top-0 z-30 flex items-center justify-end h-14 px-6 border-b shrink-0 ${
+                <header className={`sticky top-0 z-30 flex items-center justify-between h-14 px-3 md:px-6 border-b shrink-0 ${
                     darkMode ? 'bg-gray-800/95 border-gray-700 backdrop-blur' : 'bg-white/95 border-gray-200 backdrop-blur'
                 }`}>
+                    <button
+                        type="button"
+                        onClick={() => setMobileSidebarOpen((s) => !s)}
+                        className={`md:hidden inline-flex items-center justify-center rounded-md p-2 ${darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                        aria-label="Abrir navegación"
+                    >
+                        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                     {/* Esquina derecha: modo oscuro/claro + Admin */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                         {/* Interruptor modo oscuro / claro */}
                         <div className="flex items-center gap-3">
                             <span className={`flex h-8 w-8 items-center justify-center rounded-full border ${darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-300 bg-gray-100'}`}>
@@ -205,7 +235,7 @@ export default function AdminLayout({ children }) {
                                     }`}
                                 />
                             </button>
-                            <span className={`text-sm font-medium min-w-[3.5rem] ${darkMode ? 'text-amber-400/90' : 'text-gray-500'}`}>
+                            <span className={`hidden sm:inline text-sm font-medium min-w-[3.5rem] ${darkMode ? 'text-amber-400/90' : 'text-gray-500'}`}>
                                 {darkMode ? 'Oscuro' : 'Claro'}
                             </span>
                         </div>
@@ -247,7 +277,7 @@ export default function AdminLayout({ children }) {
                     </div>
                 </header>
 
-                <main className="flex-1 p-6 overflow-auto">
+                <main className="flex-1 p-3 md:p-6 overflow-auto">
                     {children}
                 </main>
             </div>
