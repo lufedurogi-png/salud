@@ -54,7 +54,7 @@ const Layout = ({ children }) => {
             darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
         }`}>
             {/* Header */}
-            <header className={`sticky top-0 z-50 border-b transition-colors duration-300 flex-shrink-0 ${
+            <header className={`sticky top-0 z-50 border-b transition-colors duration-300 flex-shrink-0 relative ${
                 darkMode ? 'bg-gray-900/95 backdrop-blur-sm border-gray-800' : 'bg-white/95 backdrop-blur-sm border-gray-200'
             }`} style={{ height: '4rem' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -130,63 +130,63 @@ const Layout = ({ children }) => {
                         </div>
                         <button
                             type="button"
-                            onClick={() => setMobileMenuOpen(true)}
-                            className={`md:hidden rounded-md p-2 ${darkMode ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}
-                            aria-label="Abrir menú"
+                            onClick={() => setMobileMenuOpen((o) => !o)}
+                            className={`md:hidden inline-flex items-center gap-1 rounded-md px-2 py-2 text-sm font-semibold ${darkMode ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}
+                            aria-expanded={mobileMenuOpen}
+                            aria-label="Menú"
                         >
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            Menú
+                            <svg className={`h-5 w-5 transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
                     </div>
                 </div>
+                {mobileMenuOpen && (
+                    <>
+                        <button
+                            type="button"
+                            aria-label="Cerrar menú"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                        />
+                        <div
+                            className={`md:hidden absolute left-0 right-0 top-full z-50 max-h-[min(80vh,420px)] overflow-y-auto border-b shadow-lg ${
+                                darkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
+                            }`}
+                        >
+                            <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+                                <div className="flex items-center justify-between rounded-lg border border-gray-700/30 px-3 py-2">
+                                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Tema</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const newMode = !darkMode
+                                            setDarkMode(newMode)
+                                            localStorage.setItem('darkMode', JSON.stringify(newMode))
+                                            window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
+                                        }}
+                                        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                                            darkMode ? 'bg-[#2b4e94]' : 'bg-gray-300'
+                                        }`}
+                                        aria-label="Cambiar tema"
+                                    >
+                                        <span className={`inline-block h-5 w-5 rounded-full bg-white transition-transform ${darkMode ? 'translate-x-8' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
+                                <div className="flex flex-col divide-y divide-gray-700/20">
+                                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                        Inicio
+                                    </Link>
+                                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                        Tienda
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
             </header>
-
-            {mobileMenuOpen && (
-                <>
-                    <button
-                        type="button"
-                        aria-label="Cerrar menú"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="fixed inset-0 z-40 bg-black/50 md:hidden"
-                    />
-                    <aside className={`fixed left-0 top-0 z-50 h-screen w-[85%] max-w-sm p-4 md:hidden ${darkMode ? 'bg-gray-900 border-r border-gray-800' : 'bg-white border-r border-gray-200'}`}>
-                        <div className="mb-4 flex items-center justify-between">
-                            <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={110} height={36} className="h-8 w-auto" />
-                            <button
-                                type="button"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className={`rounded-md p-2 ${darkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}
-                                aria-label="Cerrar navegación"
-                            >
-                                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="flex flex-col divide-y divide-gray-700/30">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const newMode = !darkMode
-                                    setDarkMode(newMode)
-                                    localStorage.setItem('darkMode', JSON.stringify(newMode))
-                                    window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
-                                }}
-                                className={`py-3 text-left font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}
-                            >
-                                Tema: {darkMode ? 'Oscuro' : 'Claro'}
-                            </button>
-                            <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                                Inicio
-                            </Link>
-                            <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`py-3 font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                                Tienda
-                            </Link>
-                        </div>
-                    </aside>
-                </>
-            )}
 
             {/* Contenido Principal: altura mínima para que la cortina/form lleguen hasta abajo en pantalla completa */}
             <main className="flex-1 flex flex-col relative min-h-0 min-h-[calc(100vh-4rem)]">

@@ -58,6 +58,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
     const [filtrosDinamicos, setFiltrosDinamicos] = useState({})
     const [filtrosDinamicosSeleccionados, setFiltrosDinamicosSeleccionados] = useState(() => parsed.filtros)
     const [compararSeleccionados, setCompararSeleccionados] = useState([])
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
     const MAX_COMPARAR = 4
 
@@ -108,6 +109,15 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
         setFiltrosDinamicosSeleccionados({})
         setProductosAnteriores([])
     }, [categoria, subcategoria])
+
+    useEffect(() => {
+        if (!mobileFiltersOpen) return undefined
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [mobileFiltersOpen])
 
     // Sincronizar estado con URL cuando vuelves desde producto (navegación con filtros en query)
     const parsedKey = `${parsed.marca}|${parsed.precio}|${parsed.stock}|${JSON.stringify(parsed.filtros)}`
@@ -211,8 +221,26 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
             darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
         }`}>
             <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
-            <div className="flex">
-                <aside className={`w-64 min-h-screen border-r transition-colors duration-300 ${
+            <div className="relative flex">
+                {mobileFiltersOpen && (
+                    <button
+                        type="button"
+                        aria-label="Cerrar filtros"
+                        onClick={() => setMobileFiltersOpen(false)}
+                        className="fixed inset-0 z-[35] bg-black/50 md:hidden"
+                    />
+                )}
+                <button
+                    type="button"
+                    className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                    onClick={() => setMobileFiltersOpen(true)}
+                >
+                    Filtros
+                </button>
+                <aside
+                    className={`max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[min(20rem,90vw)] max-md:min-h-screen max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                        mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
+                    } md:translate-x-0 w-64 min-h-screen shrink-0 border-r transition-colors duration-300 ${
                     darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                 }`}>
                     <div className="p-6 space-y-8">
@@ -335,7 +363,7 @@ export default function VistaSubcategoriaClient({ categoria, subcategoria, initi
                     </div>
                 </aside>
 
-                <main className="flex-1 p-8">
+                <main className="flex-1 p-4 md:p-8 min-w-0">
                     <div className="max-w-7xl mx-auto">
                         <nav className={`text-sm mb-6 ${
                             darkMode ? 'text-gray-400' : 'text-gray-600'

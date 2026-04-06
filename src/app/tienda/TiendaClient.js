@@ -51,6 +51,7 @@ export default function TiendaClient({ initialData = {} }) {
     const refModoCotizacionRow = useRef(null)
     const [subcategorias, setSubcategorias] = useState({})
     const [sidebarRetraido, setSidebarRetraido] = usePersistedBoolean('sidebarRetraido', false)
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
     const [currentSlide, setCurrentSlide] = useState(0)
     const [userDropdownOpen, setUserDropdownOpen] = useState(false)
     const { count: cartCount } = useCarritoCount(!!user)
@@ -141,6 +142,15 @@ export default function TiendaClient({ initialData = {} }) {
         if (catalogDisponible) loadVistosYRecomendados()
     }, [catalogDisponible, loadVistosYRecomendados])
 
+    useEffect(() => {
+        if (!mobileFiltersOpen) return undefined
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [mobileFiltersOpen])
+
     /** Refetch en background cada 3 min para mantener datos actualizados sin saturar */
     useEffect(() => {
         const interval = setInterval(refetchTienda, 180000)
@@ -191,6 +201,14 @@ export default function TiendaClient({ initialData = {} }) {
             {/* Header: TiendaNavHeader incluye Cotizaciones (dropdown) y Chat con proveedor */}
             <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
             <div className="flex relative">
+                {mobileFiltersOpen && (
+                    <button
+                        type="button"
+                        aria-label="Cerrar filtros"
+                        onClick={() => setMobileFiltersOpen(false)}
+                        className="fixed inset-0 z-[35] bg-black/50 md:hidden"
+                    />
+                )}
                 {/* Overlay para cerrar el panel desplegable (móviles / clic fuera) */}
                 {openSubcategoryPanel && (
                     <div
@@ -207,9 +225,21 @@ export default function TiendaClient({ initialData = {} }) {
                     />
                 )}
 
+                <button
+                    type="button"
+                    className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                    onClick={() => {
+                        setSidebarRetraido(false)
+                        setMobileFiltersOpen(true)
+                    }}
+                >
+                    Filtros
+                </button>
                 {/* Sidebar Izquierdo - Retráctil (mismo color que panel subcategorías: --sidebar-bg) */}
                 <aside
-                    className={`${sidebarRetraido ? 'w-16' : 'w-64'} min-h-screen border-r transition-all duration-300 relative z-10 ${
+                    className={`${sidebarRetraido ? 'md:w-16' : 'md:w-64'} max-md:w-[min(20rem,90vw)] max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:min-h-screen max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                        mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
+                    } md:translate-x-0 min-h-screen border-r transition-all duration-300 relative z-10 ${
                         darkMode ? 'border-gray-700' : 'bg-white border-gray-200'
                     }`}
                     style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
@@ -225,7 +255,7 @@ export default function TiendaClient({ initialData = {} }) {
                             setOpenCotizacionesPanel(false)
                         }
                         }}
-                        className={`absolute -right-3 top-4 z-20 w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                        className={`hidden md:flex absolute -right-3 top-4 z-20 w-6 h-6 rounded-full items-center justify-center transition-colors ${
                             darkMode 
                                 ? 'bg-gray-700 hover:bg-gray-600 border border-gray-600' 
                                 : 'bg-white hover:bg-gray-100 border border-gray-300 shadow-md'
@@ -397,7 +427,7 @@ export default function TiendaClient({ initialData = {} }) {
                 {/* Panel de subcategorías — ventana flotante al lado del sidebar (estilo viejo): fixed/absolute, posición left según sidebar */}
                 {openSubcategoryPanel && !sidebarRetraido && (
                     <div
-                        className={`fixed lg:absolute ${sidebarRetraido ? 'left-16' : 'left-64'} top-0 w-full sm:w-96 lg:w-80 xl:w-96 max-h-[calc(100vh-2rem)] mt-4 lg:mt-0 z-50 transform transition-all duration-300 ease-in-out shadow-2xl translate-x-0 opacity-100 ${
+                        className={`fixed lg:absolute left-4 right-4 top-0 w-auto max-w-[min(calc(100vw-2rem),24rem)] sm:max-w-none md:left-auto md:right-auto ${sidebarRetraido ? 'md:left-16' : 'md:left-64'} sm:w-96 lg:w-80 xl:w-96 max-h-[calc(100vh-2rem)] mt-4 lg:mt-0 z-50 transform transition-all duration-300 ease-in-out shadow-2xl translate-x-0 opacity-100 ${
                             darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
                         }`}
                         style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
@@ -469,7 +499,7 @@ export default function TiendaClient({ initialData = {} }) {
                 {openCotizacionesPanel && !sidebarRetraido && (
                     <>
                     <div
-                        className={`fixed lg:absolute ${sidebarRetraido ? 'left-16' : 'left-64'} top-0 w-72 max-h-[calc(100vh-2rem)] mt-4 lg:mt-0 z-50 transform transition-all duration-300 ease-in-out shadow-2xl translate-x-0 opacity-100 rounded-xl overflow-hidden ${
+                        className={`fixed lg:absolute left-4 right-4 top-0 w-auto max-w-[min(calc(100vw-2rem),20rem)] md:left-auto md:right-auto ${sidebarRetraido ? 'md:left-16' : 'md:left-64'} md:w-72 max-h-[calc(100vh-2rem)] mt-4 lg:mt-0 z-50 transform transition-all duration-300 ease-in-out shadow-2xl translate-x-0 opacity-100 rounded-xl overflow-hidden ${
                             darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
                         }`}
                         style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
@@ -600,7 +630,7 @@ export default function TiendaClient({ initialData = {} }) {
                 )}
 
                 {/* Contenido Principal */}
-                <main className="flex-1 min-w-0 p-8">
+                <main className="flex-1 min-w-0 p-4 md:p-8">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-wrap items-baseline gap-3 mb-8">
                             <h1 className={`text-3xl font-bold ${

@@ -68,6 +68,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
     const [stockFiltro, setStockFiltro] = useState(() => parsed.stock || '')
     const [filtrosDinamicos, setFiltrosDinamicos] = useState({})
     const [filtrosDinamicosSeleccionados, setFiltrosDinamicosSeleccionados] = useState(() => parsed.filtros || {})
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
     const initialDataRef = useRef(initialData)
     initialDataRef.current = initialData
@@ -77,6 +78,15 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
             .then((estado) => setCatalogDisponible(estado?.disponible ?? false))
             .catch(() => setCatalogDisponible(false))
     }, [])
+
+    useEffect(() => {
+        if (!mobileFiltersOpen) return undefined
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [mobileFiltersOpen])
 
     useEffect(() => {
         const q = typeof querySearch === 'string' ? querySearch.trim() : ''
@@ -269,13 +279,36 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
     const tieneResultados = resultadoBusqueda?.productos?.length > 0
     const loadingLista = usarApiProductos ? loadingProductosApi : false
 
+    useEffect(() => {
+        if (!tieneResultados) setMobileFiltersOpen(false)
+    }, [tieneResultados])
+
     return (
         <div className={`min-h-screen transition-colors duration-300 ${bg} ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
             <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} />
-            <div className="flex">
+            <div className="relative flex">
+                {tieneResultados && mobileFiltersOpen && (
+                    <button
+                        type="button"
+                        aria-label="Cerrar filtros"
+                        onClick={() => setMobileFiltersOpen(false)}
+                        className="fixed inset-0 z-[35] bg-black/50 md:hidden"
+                    />
+                )}
+                {tieneResultados && (
+                    <button
+                        type="button"
+                        className="md:hidden fixed bottom-6 left-4 z-[38] flex items-center gap-2 rounded-full bg-[#FF8000] px-4 py-3 text-sm font-semibold text-white shadow-lg"
+                        onClick={() => setMobileFiltersOpen(true)}
+                    >
+                        Filtros
+                    </button>
+                )}
                 {tieneResultados && (
                     <aside
-                        className={`w-64 min-h-screen border-r shrink-0 transition-colors duration-300 ${
+                        className={`max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[min(20rem,90vw)] max-md:min-h-screen max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                            mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
+                        } md:translate-x-0 w-64 min-h-screen shrink-0 border-r transition-colors duration-300 ${
                             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                         }`}
                     >
@@ -400,7 +433,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                     </aside>
                 )}
 
-                <main className="flex-1 p-8">
+                <main className="flex-1 p-4 md:p-8 min-w-0">
                     <div className="max-w-7xl mx-auto">
                         <nav className={`text-sm mb-6 ${textMuted}`}>
                             <Link href="/" className="hover:text-[#FF8000] transition-colors">

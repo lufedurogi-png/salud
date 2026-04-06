@@ -26,6 +26,7 @@ export default function AdminLayout({ children }) {
     const [darkMode, setDarkMode] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+    const [mobileTopMenuOpen, setMobileTopMenuOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
     const [adminMenuOpen, setAdminMenuOpen] = useState(false)
     const adminMenuRef = useRef(null)
@@ -75,13 +76,18 @@ export default function AdminLayout({ children }) {
     }, [])
 
     useEffect(() => {
-        if (!mobileSidebarOpen) return undefined
+        if (!mobileSidebarOpen && !mobileTopMenuOpen) return undefined
         const previousOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
         return () => {
             document.body.style.overflow = previousOverflow
         }
-    }, [mobileSidebarOpen])
+    }, [mobileSidebarOpen, mobileTopMenuOpen])
+
+    useEffect(() => {
+        setMobileTopMenuOpen(false)
+        setMobileSidebarOpen(false)
+    }, [pathname])
 
     // Mostrar "Cargando..." solo después de montar para evitar hydration mismatch (server no tiene user/localStorage)
     if (mounted && !user && typeof window !== 'undefined' && localStorage.getItem('auth_token')) {
@@ -195,21 +201,24 @@ export default function AdminLayout({ children }) {
 
             <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ml-0 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
                 {/* Barra superior tipo Laravel */}
-                <header className={`sticky top-0 z-30 flex items-center justify-between h-14 px-3 md:px-6 border-b shrink-0 ${
+                <header className={`sticky top-0 z-30 flex items-center justify-between h-14 px-3 md:px-6 border-b shrink-0 relative ${
                     darkMode ? 'bg-gray-800/95 border-gray-700 backdrop-blur' : 'bg-white/95 border-gray-200 backdrop-blur'
                 }`}>
                     <button
                         type="button"
-                        onClick={() => setMobileSidebarOpen((s) => !s)}
+                        onClick={() => {
+                            setMobileTopMenuOpen(false)
+                            setMobileSidebarOpen((s) => !s)
+                        }}
                         className={`md:hidden inline-flex items-center justify-center rounded-md p-2 ${darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
-                        aria-label="Abrir navegación"
+                        aria-label="Abrir navegación lateral"
                     >
                         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
                     {/* Esquina derecha: modo oscuro/claro + Admin */}
-                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="hidden md:flex flex-1 items-center justify-end gap-2 md:gap-4">
                         {/* Interruptor modo oscuro / claro */}
                         <div className="flex items-center gap-3">
                             <span className={`flex h-8 w-8 items-center justify-center rounded-full border ${darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-300 bg-gray-100'}`}>
@@ -275,6 +284,88 @@ export default function AdminLayout({ children }) {
                         )}
                         </div>
                     </div>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setMobileSidebarOpen(false)
+                            setMobileTopMenuOpen((o) => !o)
+                        }}
+                        className={`md:hidden inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold ${darkMode ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-800 hover:bg-gray-100'}`}
+                        aria-expanded={mobileTopMenuOpen}
+                        aria-label="Menú superior"
+                    >
+                        Menú
+                        <svg className={`h-5 w-5 transition-transform ${mobileTopMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    {mobileTopMenuOpen && (
+                        <>
+                            <button
+                                type="button"
+                                aria-label="Cerrar menú"
+                                onClick={() => setMobileTopMenuOpen(false)}
+                                className="fixed inset-0 z-[25] bg-black/50 md:hidden"
+                            />
+                            <div
+                                className={`md:hidden absolute left-0 right-0 top-full z-[35] max-h-[min(75vh,420px)] overflow-y-auto border-b shadow-lg ${
+                                    darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
+                                }`}
+                            >
+                                <div className="px-4 py-4 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`flex h-8 w-8 items-center justify-center rounded-full border ${darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-300 bg-gray-100'}`}>
+                                            <Image src="/Imagenes/icon_modo.webp" alt="" width={16} height={16} className="w-4 h-4 object-contain" />
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newMode = !darkMode
+                                                setDarkMode(newMode)
+                                                if (typeof window !== 'undefined') {
+                                                    localStorage.setItem('darkMode', JSON.stringify(newMode))
+                                                    window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
+                                                }
+                                            }}
+                                            className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+                                                darkMode ? 'bg-emerald-600' : 'bg-gray-300'
+                                            }`}
+                                            aria-label="Modo oscuro / claro"
+                                        >
+                                            <span
+                                                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300 ${
+                                                    darkMode ? 'translate-x-8' : 'translate-x-1'
+                                                }`}
+                                            />
+                                        </button>
+                                        <span className={`text-sm font-medium ${darkMode ? 'text-amber-400/90' : 'text-gray-500'}`}>
+                                            {darkMode ? 'Oscuro' : 'Claro'}
+                                        </span>
+                                    </div>
+                                    <div className="border-t border-gray-700/40 pt-3">
+                                        <p className={`text-xs font-semibold uppercase mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Cuenta</p>
+                                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Admin: </span>
+                                            <span className="font-medium">{user?.name || user?.nombre || 'Admin'}</span>
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setMobileTopMenuOpen(false)
+                                                logout()
+                                            }}
+                                            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-400 hover:bg-gray-700/40"
+                                        >
+                                            <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            Cerrar sesión
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </header>
 
                 <main className="flex-1 p-3 md:p-6 overflow-auto">
