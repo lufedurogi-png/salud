@@ -292,13 +292,17 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
     }, [tieneResultados])
 
     return (
-        <div className={`min-h-screen transition-colors duration-300 ${bg} ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+        <div className={`flex min-h-screen flex-col transition-colors duration-300 ${bg} ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
             <TiendaNavHeader
                 darkMode={darkMode}
                 setDarkMode={setDarkMode}
                 onToggleLeftSidebar={tieneResultados ? () => setMobileFiltersOpen((v) => !v) : undefined}
             />
-            <div className="relative flex">
+            <div
+                className={`relative flex min-h-0 w-full flex-1 md:items-stretch md:gap-0 ${
+                    tieneResultados ? 'md:grid md:grid-cols-[16rem_minmax(0,1fr)]' : ''
+                }`}
+            >
                 {tieneResultados && !mobileFiltersOpen && (
                     <div className="fixed left-0 bottom-0 z-[36] w-9 md:hidden max-md:top-[var(--tienda-header-height)]" aria-hidden {...edgeStripProps} />
                 )}
@@ -312,14 +316,14 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                 )}
                 {tieneResultados && (
                     <aside
-                        className={`max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:w-[min(20rem,90vw)] max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                        className={`max-md:flex max-md:min-h-0 max-md:flex-col max-md:overflow-hidden max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:w-[min(20rem,90vw)] max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                             mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
-                        } md:translate-x-0 w-64 min-h-screen shrink-0 border-r transition-colors duration-300 ${
+                        } md:translate-x-0 md:fixed md:left-0 md:top-[var(--tienda-header-height,0px)] md:bottom-0 md:z-10 md:flex md:h-full md:min-h-0 md:w-64 md:flex-1 md:flex-col md:overflow-hidden shrink-0 border-r transition-colors duration-300 max-md:border-r md:border-r ${
                             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                         }`}
                         {...drawerTouchProps}
                     >
-                        <div className="p-6 space-y-8">
+                        <div className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain p-6">
                             <div>
                                 <h3 className={`text-sm font-bold uppercase mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     ORDENAR POR
@@ -440,7 +444,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                     </aside>
                 )}
 
-                <main className="flex-1 p-4 md:p-8 min-w-0">
+                <main className="min-h-0 min-w-0 flex-1 p-4 md:min-w-0 md:p-8">
                     <div className="max-w-7xl mx-auto">
                         <nav className={`text-sm mb-6 ${textMuted}`}>
                             <Link href="/" className="hover:text-[#FF8000] transition-colors">

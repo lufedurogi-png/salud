@@ -16,7 +16,7 @@ import IconoNavegacion from '@/components/IconoNavegacion'
  * @param {() => void} [onToggleLeftSidebar] — Móvil: abre/cierra el panel izquierdo (filtros/categorías). Opcional.
  */
 export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSidebar }) {
-    const headerMeasureRef = useRef(null)
+    const mobileStickyNavRef = useRef(null)
     const { user, logout } = useAuth({ middleware: 'guest' })
     const [userDropdownOpen, setUserDropdownOpen] = useState(false)
     const [hasToken, setHasToken] = useState(false)
@@ -34,9 +34,13 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
     useProductosByClaves(isLogged ? [] : cartKeys, 'cart-productos')
 
     useLayoutEffect(() => {
-        const el = headerMeasureRef.current
+        const el = mobileStickyNavRef.current
         if (!el || typeof window === 'undefined') return undefined
         const apply = () => {
+            if (!window.matchMedia('(max-width: 767px)').matches) {
+                document.documentElement.style.removeProperty('--tienda-header-height')
+                return
+            }
             const raw = Math.ceil(el.getBoundingClientRect().height)
             const h = raw > 0 ? raw : 88
             document.documentElement.style.setProperty('--tienda-header-height', `${h}px`)
@@ -44,8 +48,11 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
         apply()
         const ro = new ResizeObserver(apply)
         ro.observe(el)
+        const mq = window.matchMedia('(max-width: 767px)')
+        mq.addEventListener('change', apply)
         return () => {
             ro.disconnect()
+            mq.removeEventListener('change', apply)
             document.documentElement.style.removeProperty('--tienda-header-height')
         }
     }, [darkMode, user])
@@ -72,11 +79,13 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
     const pill = `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
         darkMode ? 'bg-gray-800/80 text-gray-200 hover:bg-gray-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
     }`
+    const pillSm = `inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+        darkMode ? 'bg-gray-800/80 text-gray-200 hover:bg-gray-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+    }`
 
     return (
         <header
-            ref={headerMeasureRef}
-            className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
+            className={`z-50 border-b transition-colors duration-300 md:sticky md:top-0 max-md:static ${
                 darkMode ? 'bg-gray-900/95 backdrop-blur-sm border-gray-800' : 'bg-white/95 backdrop-blur-sm border-gray-200'
             }`}
         >
@@ -221,92 +230,133 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
                     </div>
                 </div>
 
-                {/* Móvil: barra superior (sticky); icono de navegación abre/cierra panel lateral */}
-                <div className="md:hidden py-3 space-y-3">
-                    <div className="flex items-center justify-between gap-2 min-w-0">
-                        {typeof onToggleLeftSidebar === 'function' ? (
-                            <button
-                                type="button"
-                                onClick={onToggleLeftSidebar}
-                                className={`shrink-0 rounded-xl p-2 transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
-                                aria-label="Abrir o cerrar panel lateral"
-                            >
-                                <IconoNavegacion darkMode={darkMode} />
-                            </button>
-                        ) : (
-                            <span className="w-11 shrink-0" aria-hidden />
-                        )}
-                        <Link href="/" className="flex min-w-0 flex-1 justify-center">
-                            <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={108} height={36} className="h-8 w-auto max-w-[min(100%,200px)]" />
-                        </Link>
-                        <span className="w-11 shrink-0" aria-hidden />
-                    </div>
-
-                    <div className="min-w-0 w-full">
-                        <SearchBar darkMode={darkMode} className="max-w-none w-full" />
-                    </div>
-
-                    {user && (
-                        <>
-                            <div className={`text-xs font-semibold uppercase tracking-wide ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                                Cuenta · {user?.name || user?.email}
-                            </div>
-                            <div className={`flex flex-wrap items-center gap-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                                <Link href="/dashboard" className={pill}>
-                                    <Image src="/Imagenes/icon_pedidos.png" alt="" width={16} height={16} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
-                                    Pedidos
-                                </Link>
-                                <button type="button" onClick={() => logout()} className={`${pill} text-left`}>
-                                    <Image src="/Imagenes/icon_cerrar_sesion.webp" alt="" width={16} height={16} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
-                                    Salir
+                {/* Móvil: franja sticky (medida para drawer); buscador debajo y hace scroll con la página */}
+                <div className="md:hidden">
+                    <div
+                        ref={mobileStickyNavRef}
+                        className={`sticky top-0 z-[60] -mx-4 border-b px-4 py-2 sm:-mx-6 sm:px-6 ${
+                            darkMode ? 'border-gray-700/80 bg-gray-900/95 backdrop-blur-md' : 'border-gray-200 bg-white/95 backdrop-blur-md'
+                        }`}
+                    >
+                        <div className="flex items-center gap-1 min-w-0">
+                            {typeof onToggleLeftSidebar === 'function' ? (
+                                <button
+                                    type="button"
+                                    onClick={onToggleLeftSidebar}
+                                    className={`shrink-0 rounded-xl p-2 transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+                                    aria-label="Abrir o cerrar panel lateral"
+                                >
+                                    <IconoNavegacion darkMode={darkMode} />
+                                </button>
+                            ) : (
+                                <span className="w-11 shrink-0" aria-hidden />
+                            )}
+                            <div className={`flex shrink-0 items-center gap-1 rounded-lg px-1 py-0.5 ${darkMode ? 'bg-gray-800/50' : 'bg-gray-100/80'}`}>
+                                <Image
+                                    src="/Imagenes/icon_modo.webp"
+                                    alt=""
+                                    width={16}
+                                    height={16}
+                                    className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={toggleDark}
+                                    className={`relative inline-flex h-5 w-10 shrink-0 items-center rounded-full transition-colors ${
+                                        darkMode ? 'bg-[#2b4e94]' : 'bg-gray-300'
+                                    }`}
+                                    aria-label="Cambiar tema"
+                                >
+                                    <span
+                                        className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                                            darkMode ? 'translate-x-5' : 'translate-x-0.5'
+                                        }`}
+                                    />
                                 </button>
                             </div>
-                            <div className={`h-px ${darkMode ? 'bg-gray-700/60' : 'bg-gray-200'}`} aria-hidden />
-                        </>
-                    )}
-
-                    <div className={`flex flex-wrap items-center gap-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                        <div className={`flex flex-wrap items-center gap-2 ${pill}`}>
-                            <Image
-                                src="/Imagenes/icon_modo.webp"
-                                alt=""
-                                width={18}
-                                height={18}
-                                className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`}
-                            />
-                            <button
-                                type="button"
-                                onClick={toggleDark}
-                                className={`relative inline-flex h-6 w-12 shrink-0 items-center rounded-full transition-colors ${
-                                    darkMode ? 'bg-[#2b4e94]' : 'bg-gray-300'
-                                }`}
-                                aria-label="Cambiar tema"
-                            >
-                                <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
-                            </button>
-                            <span className="text-xs font-medium">{darkMode ? 'Oscuro' : 'Claro'}</span>
-                        </div>
-                        {user && (
-                            <Link href="/favoritos" className={pill}>
-                                <Image src="/Imagenes/icon_favoritos.png" alt="" width={18} height={18} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
-                                Favoritos
-                                {favoritosCount > 0 && (
-                                    <span className="rounded-full bg-[#FF8000] px-1.5 text-[11px] font-semibold text-white">{favoritosCount > 99 ? '99+' : favoritosCount}</span>
-                                )}
+                            <Link href="/" className="flex min-w-0 flex-1 justify-center px-1">
+                                <Image
+                                    src="/Imagenes/logo_en.png"
+                                    alt="Todo para oficina"
+                                    width={108}
+                                    height={36}
+                                    className="h-7 w-auto max-w-[min(100%,180px)] sm:h-8"
+                                />
                             </Link>
-                        )}
-                        <Link href="/tienda/carrito" className={pill}>
-                            <Image src="/Imagenes/icon_carrito.png" alt="" width={18} height={18} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
-                            Carrito
-                            {cartCount > 0 && (
-                                <span className="rounded-full bg-[#FF8000] px-1.5 text-[11px] font-semibold text-white">{cartCount > 99 ? '99+' : cartCount}</span>
+                            {user ? (
+                                <button
+                                    type="button"
+                                    onClick={() => logout()}
+                                    className={`shrink-0 rounded-xl p-2 transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+                                    aria-label="Salir"
+                                >
+                                    <Image
+                                        src="/Imagenes/icon_cerrar_sesion.webp"
+                                        alt=""
+                                        width={22}
+                                        height={22}
+                                        className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`}
+                                    />
+                                </button>
+                            ) : (
+                                <span className="w-11 shrink-0" aria-hidden />
                             )}
-                        </Link>
-                        {!user && (
-                            <Link href="/login" className={pill}>
-                                Iniciar sesión
-                            </Link>
+                        </div>
+
+                        {user && (
+                            <>
+                                <p
+                                    className={`mt-1.5 truncate text-center text-[10px] font-semibold uppercase tracking-wide ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}
+                                >
+                                    Cuenta · {user?.name || user?.email}
+                                </p>
+                                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
+                                    <Link href="/dashboard" className={pillSm}>
+                                        <Image src="/Imagenes/icon_pedidos.png" alt="" width={14} height={14} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
+                                        Pedidos
+                                    </Link>
+                                    <Link href="/favoritos" className={pillSm}>
+                                        <Image src="/Imagenes/icon_favoritos.png" alt="" width={14} height={14} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
+                                        Favoritos
+                                        {favoritosCount > 0 && (
+                                            <span className="rounded-full bg-[#FF8000] px-1 text-[10px] font-semibold text-white">
+                                                {favoritosCount > 99 ? '99+' : favoritosCount}
+                                            </span>
+                                        )}
+                                    </Link>
+                                    <Link href="/tienda/carrito" className={pillSm}>
+                                        <Image src="/Imagenes/icon_carrito.png" alt="" width={14} height={14} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
+                                        Carrito
+                                        {cartCount > 0 && (
+                                            <span className="rounded-full bg-[#FF8000] px-1 text-[10px] font-semibold text-white">
+                                                {cartCount > 99 ? '99+' : cartCount}
+                                            </span>
+                                        )}
+                                    </Link>
+                                </div>
+                            </>
                         )}
+
+                        {!user && (
+                            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
+                                <Link href="/tienda/carrito" className={pillSm}>
+                                    <Image src="/Imagenes/icon_carrito.png" alt="" width={14} height={14} className={`object-contain ${darkMode ? 'brightness-0 invert' : ''}`} />
+                                    Carrito
+                                    {cartCount > 0 && (
+                                        <span className="rounded-full bg-[#FF8000] px-1 text-[10px] font-semibold text-white">
+                                            {cartCount > 99 ? '99+' : cartCount}
+                                        </span>
+                                    )}
+                                </Link>
+                                <Link href="/login" className={pillSm}>
+                                    Iniciar sesión
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="py-3">
+                        <SearchBar darkMode={darkMode} className="max-w-none w-full" />
                     </div>
                 </div>
             </div>

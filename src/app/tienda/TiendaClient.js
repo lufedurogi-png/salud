@@ -211,14 +211,18 @@ export default function TiendaClient({ initialData = {} }) {
 
     return (
         <div
-            className={`min-h-screen transition-colors duration-300 ${
+            className={`flex min-h-screen flex-col transition-colors duration-300 ${
                 darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
             }`}
             style={darkMode ? { '--sidebar-bg': 'rgb(31 41 55)' } : undefined}
         >
             {/* Header: TiendaNavHeader incluye Cotizaciones (dropdown) y Chat con proveedor */}
             <TiendaNavHeader darkMode={darkMode} setDarkMode={setDarkMode} onToggleLeftSidebar={toggleMobileDrawer} />
-            <div className="flex relative">
+            <div
+                className={`relative flex min-h-0 w-full flex-1 md:grid md:items-stretch md:gap-0 md:min-h-0 ${
+                    sidebarRetraido ? 'md:grid-cols-[4rem_minmax(0,1fr)]' : 'md:grid-cols-[16rem_minmax(0,1fr)]'
+                }`}
+            >
                 {!mobileFiltersOpen && (
                     <div
                         className="fixed left-0 bottom-0 z-[36] w-9 md:hidden max-md:top-[var(--tienda-header-height)]"
@@ -250,17 +254,17 @@ export default function TiendaClient({ initialData = {} }) {
                     />
                 )}
 
-                {/* Columna sidebar + flyouts (md:left-full ancla subcategorías/cotizaciones al borde derecho de la barra) */}
+                {/* Columna sidebar + flyouts. En md: grid alinea altura con main (sin fixed = no tapa el footer). */}
                 <div
-                    className={`contents md:block md:relative md:shrink-0 ${
-                        sidebarRetraido ? 'md:w-16' : 'md:w-64'
+                    className={`max-md:contents md:relative md:flex md:min-h-0 md:h-full md:w-full md:flex-col md:self-stretch md:border-r md:transition-all md:duration-300 ${
+                        darkMode ? 'md:border-gray-700' : 'md:border-gray-200'
                     }`}
                 >
                 {/* Sidebar Izquierdo - Retráctil (mismo color que panel subcategorías: --sidebar-bg) */}
                 <aside
-                    className={`w-full max-md:w-[min(20rem,90vw)] max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:overflow-y-auto max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
+                    className={`w-full max-md:flex max-md:min-h-0 max-md:flex-col max-md:w-[min(20rem,90vw)] max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:overflow-hidden max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                         mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
-                    } md:translate-x-0 min-h-screen border-r transition-all duration-300 relative z-10 ${
+                    } md:translate-x-0 md:relative md:z-10 md:flex md:h-full md:min-h-0 md:flex-1 md:flex-col md:overflow-hidden border-r transition-all duration-300 max-md:border-r md:border-r-0 ${
                         darkMode ? 'border-gray-700' : 'bg-white border-gray-200'
                     }`}
                     style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
@@ -296,7 +300,9 @@ export default function TiendaClient({ initialData = {} }) {
                         </svg>
                     </button>
 
-                    <div className={`p-6 space-y-8 overflow-hidden ${sidebarRetraido ? 'px-2' : ''}`}>
+                    <div
+                        className={`min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain p-6 ${sidebarRetraido ? 'px-2' : ''}`}
+                    >
                         {/* Filtros */}
                         <div className="space-y-4">
                         {!sidebarRetraido ? (
@@ -654,8 +660,8 @@ export default function TiendaClient({ initialData = {} }) {
                 )}
                 </div>
 
-                {/* Contenido Principal */}
-                <main className="flex-1 min-w-0 p-4 md:p-8">
+                {/* Contenido Principal (misma fila de grid que el sidebar; el footer va después, ancho completo) */}
+                <main className="min-h-0 min-w-0 flex-1 p-4 md:min-w-0 md:p-8">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-wrap items-baseline gap-3 mb-8">
                             <h1 className={`text-3xl font-bold ${
