@@ -1,12 +1,26 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/auth'
 import Loading from '@/app/(app)/Loading'
 
 const AppLayout = ({ children }) => {
+    const router = useRouter()
     const { user } = useAuth({ middleware: 'auth' })
+    const [checkedSession, setCheckedSession] = useState(false)
 
-    if (!user) {
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        const hasToken = !!localStorage.getItem('auth_token')
+        if (!hasToken) {
+            router.replace('/login')
+            return
+        }
+        setCheckedSession(true)
+    }, [router])
+
+    if (!checkedSession || !user) {
         return <Loading />
     }
 

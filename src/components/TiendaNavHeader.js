@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/auth'
 import SearchBar from '@/components/SearchBar'
 import { useCarrito } from '@/lib/carrito'
@@ -11,11 +12,15 @@ import { useProductosByClaves } from '@/hooks/useProductosChunked'
 import IconoNavegacion from '@/components/IconoNavegacion'
 
 /**
- * Barra de navegación de la tienda: logo, toggle oscuro, Favoritos, Carrito, Tienda, Inicio.
+ * Barra de navegación de la tienda: logo, toggle oscuro, Favoritos, Carrito; enlaces Tienda/Inicio según ruta.
  * Prefetch de datos de favoritos y carrito para que al abrir esas vistas carguen al instante.
  * @param {() => void} [onToggleLeftSidebar] — Móvil: abre/cierra el panel izquierdo (filtros/categorías). Opcional.
  */
 export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSidebar }) {
+    const pathname = usePathname() || ''
+    const esAreaTienda = pathname === '/' || pathname.startsWith('/tienda')
+    const mostrarLinkTiendaBarra = pathname !== '/'
+    const mostrarLinkInicioBarra = !esAreaTienda
     const mobileStickyNavRef = useRef(null)
     const { user, logout } = useAuth({ middleware: 'guest' })
     const [userDropdownOpen, setUserDropdownOpen] = useState(false)
@@ -163,12 +168,16 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
                                 </span>
                             )}
                         </Link>
-                        <Link href="/" className={`transition-colors font-medium ${darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'}`}>
-                            Tienda
-                        </Link>
-                        <Link href="/" className={`transition-colors font-medium ${darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'}`}>
-                            Inicio
-                        </Link>
+                        {mostrarLinkTiendaBarra && (
+                            <Link href="/" className={`transition-colors font-medium ${darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'}`}>
+                                Tienda
+                            </Link>
+                        )}
+                        {mostrarLinkInicioBarra && (
+                            <Link href="/" className={`transition-colors font-medium ${darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'}`}>
+                                Inicio
+                            </Link>
+                        )}
                         {user ? (
                             <div className="relative tienda-nav-user-dropdown">
                                 <button

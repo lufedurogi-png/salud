@@ -264,7 +264,7 @@ export default function TiendaClient({ initialData = {} }) {
                 <aside
                     className={`w-full max-md:flex max-md:min-h-0 max-md:flex-col max-md:w-[min(20rem,90vw)] max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:overflow-hidden max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                         mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
-                    } md:translate-x-0 md:relative md:z-10 md:flex md:h-full md:min-h-0 md:flex-1 md:flex-col md:overflow-hidden border-r transition-all duration-300 max-md:border-r md:border-r-0 ${
+                    } md:translate-x-0 md:relative md:z-10 md:flex md:h-full md:min-h-0 md:flex-1 md:flex-col md:overflow-visible border-r transition-all duration-300 max-md:border-r md:border-r-0 ${
                         darkMode ? 'border-gray-700' : 'bg-white border-gray-200'
                     }`}
                     style={darkMode ? { backgroundColor: 'var(--sidebar-bg)' } : undefined}
@@ -281,7 +281,7 @@ export default function TiendaClient({ initialData = {} }) {
                             setOpenCotizacionesPanel(false)
                         }
                         }}
-                        className={`hidden md:flex absolute -right-3 top-4 z-20 w-6 h-6 rounded-full items-center justify-center transition-colors ${
+                        className={`hidden md:flex absolute -right-3 top-4 z-30 w-6 h-6 rounded-full items-center justify-center transition-colors ${
                             darkMode 
                                 ? 'bg-gray-700 hover:bg-gray-600 border border-gray-600' 
                                 : 'bg-white hover:bg-gray-100 border border-gray-300 shadow-md'

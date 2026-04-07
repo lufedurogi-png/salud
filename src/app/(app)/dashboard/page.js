@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/auth'
 import Link from 'next/link'
@@ -85,6 +85,68 @@ function DashboardInner() {
         setDashboardMounted(true)
     }, [])
     const [hoveredTab, setHoveredTab] = useState(null)
+    const mobileTabsScrollRef = useRef(null)
+    const [mobileTabsProgress, setMobileTabsProgress] = useState(0)
+    const [mobileTabsHasOverflow, setMobileTabsHasOverflow] = useState(false)
+    const [tabsMovilActivo, setTabsMovilActivo] = useState(false)
+    const [tabsDesktopCompacto, setTabsDesktopCompacto] = useState(false)
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined
+        const evaluateTabsMode = () => {
+            const ua = window.navigator.userAgent || ''
+            const isMobileUA = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobile/i.test(ua)
+            setTabsMovilActivo(isMobileUA && window.innerWidth < 768)
+            setTabsDesktopCompacto(!isMobileUA && window.innerWidth < 1200)
+        }
+        evaluateTabsMode()
+        window.addEventListener('resize', evaluateTabsMode)
+        return () => window.removeEventListener('resize', evaluateTabsMode)
+    }, [])
+
+    const updateMobileTabsProgress = useCallback(() => {
+        const el = mobileTabsScrollRef.current
+        if (!el) return
+        if (!tabsMovilActivo) {
+            setMobileTabsProgress(0)
+            setMobileTabsHasOverflow(false)
+            return
+        }
+        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth)
+        const nextProgress = maxScroll > 0 ? (el.scrollLeft / maxScroll) * 100 : 0
+        setMobileTabsProgress(Math.max(0, Math.min(100, nextProgress)))
+        setMobileTabsHasOverflow(maxScroll > 8)
+    }, [tabsMovilActivo])
+
+    useEffect(() => {
+        const el = mobileTabsScrollRef.current
+        if (!el) return undefined
+        updateMobileTabsProgress()
+        const onScroll = () => updateMobileTabsProgress()
+        const onResize = () => updateMobileTabsProgress()
+        el.addEventListener('scroll', onScroll, { passive: true })
+        window.addEventListener('resize', onResize)
+        return () => {
+            el.removeEventListener('scroll', onScroll)
+            window.removeEventListener('resize', onResize)
+        }
+    }, [updateMobileTabsProgress, tabsMovilActivo])
+
+    useEffect(() => {
+        const el = mobileTabsScrollRef.current
+        if (!el || typeof window === 'undefined' || !tabsMovilActivo) return
+        const activeBtn = el.querySelector(`[data-tab-id="${activeTab}"]`)
+        if (!activeBtn || typeof activeBtn.scrollIntoView !== 'function') return
+        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+        window.setTimeout(updateMobileTabsProgress, 250)
+    }, [activeTab, updateMobileTabsProgress, tabsMovilActivo])
+
+    const getDesktopCompactLines = useCallback((label) => {
+        const words = String(label || '').trim().split(/\s+/).filter(Boolean)
+        if (words.length <= 1) return [label]
+        if (words.length === 2) return words
+        return [words.slice(0, 2).join(' '), words.slice(2).join(' ')]
+    }, [])
     
     // Estados para MIS PEDIDOS
     const [fechaDesde, setFechaDesde] = useState('')
@@ -1074,16 +1136,33 @@ function DashboardInner() {
                     <div className={`mb-8 border-b-2 transition-colors duration-300 ${
                         darkMode ? 'border-gray-700' : 'border-gray-200'
                     }`}>
-                        <div className="flex space-x-2 md:space-x-6 lg:space-x-8">
+                        <div
+                            ref={mobileTabsScrollRef}
+                            className={`flex ${
+                                tabsMovilActivo
+                                    ? 'space-x-2 overflow-x-auto whitespace-nowrap pb-1'
+                                    : tabsDesktopCompacto
+                                        ? 'space-x-0 overflow-x-auto whitespace-nowrap pb-0'
+                                        : 'space-x-3 lg:space-x-4 overflow-x-auto whitespace-nowrap pb-0'
+                            }`}
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
                             {tabs.map((tab) => {
                                 const isActive = activeTab === tab.id
                                 return (
                                     <button
                                         key={tab.id}
+                                        data-tab-id={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         onMouseEnter={() => setHoveredTab(tab.id)}
                                         onMouseLeave={() => setHoveredTab(null)}
-                                        className={`group flex flex-col items-center pb-4 px-3 md:px-4 transition-all duration-300 relative ${
+                                        className={`group ${
+                                            tabsMovilActivo
+                                                ? 'shrink-0 min-w-[7.5rem] px-3'
+                                                : tabsDesktopCompacto
+                                                    ? 'shrink-0 w-[5.6rem] px-0'
+                                                    : 'shrink-0 min-w-[9.2rem] lg:min-w-[10.2rem] px-2.5'
+                                        } flex flex-col items-center pb-4 transition-all duration-300 relative whitespace-normal ${
                                             isActive
                                                 ? darkMode
                                                     ? 'text-white'
@@ -1115,12 +1194,24 @@ function DashboardInner() {
                                                 />
                                             </div>
                                         </div>
-                                        <span className={`text-xs md:text-sm font-medium transition-all duration-300 ${
+                                        <span className={`${
+                                            tabsDesktopCompacto && !tabsMovilActivo
+                                                ? 'max-w-[5.2rem] whitespace-normal break-words'
+                                                : 'whitespace-nowrap'
+                                        } text-xs md:text-sm text-center leading-tight font-medium transition-all duration-300 ${
                                             isActive 
                                                 ? 'font-bold scale-105' 
                                                 : 'group-hover:font-semibold'
                                         }`}>
-                                            {tab.label}
+                                            {tabsDesktopCompacto && !tabsMovilActivo ? (
+                                                getDesktopCompactLines(tab.label).map((line, idx) => (
+                                                    <span key={`${tab.id}-line-${idx}`} className="block">
+                                                        {line}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                tab.label
+                                            )}
                                         </span>
                                         {/* Línea activa con efecto */}
                                         {isActive && (
@@ -1133,6 +1224,19 @@ function DashboardInner() {
                                 )
                             })}
                         </div>
+                        {tabsMovilActivo && mobileTabsHasOverflow && (
+                            <div className="mt-2 mb-1">
+                                <p className={`text-[11px] mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    Desliza para ver más secciones
+                                </p>
+                                <div className={`h-1.5 w-full rounded-full overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-[#FF8000] via-[#FF9A1A] to-[#FF8000] transition-all duration-200"
+                                        style={{ width: '28%', transform: `translateX(${mobileTabsProgress * 0.72}%)` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Contenido de Tabs */}
