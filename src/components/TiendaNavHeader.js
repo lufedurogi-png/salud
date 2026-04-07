@@ -84,8 +84,10 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
     }`
 
     return (
+        <>
         <header
-            className={`z-50 border-b transition-colors duration-300 sticky top-0 ${
+            ref={mobileStickyNavRef}
+            className={`z-50 border-b transition-colors duration-300 max-md:fixed max-md:inset-x-0 max-md:top-0 max-md:z-[60] max-md:shadow-md md:sticky md:top-0 ${
                 darkMode ? 'bg-gray-900/95 backdrop-blur-sm border-gray-800' : 'bg-white/95 backdrop-blur-sm border-gray-200'
             }`}
         >
@@ -230,10 +232,9 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
                     </div>
                 </div>
 
-                {/* Móvil: bloque sticky = barra + cuenta + buscador (misma altura que --tienda-header-height para el drawer) */}
+                {/* Móvil: barra + cuenta + buscador (altura total la mide el <header> ref para --tienda-header-height) */}
                 <div className="md:hidden">
                     <div
-                        ref={mobileStickyNavRef}
                         className={`-mx-4 px-4 py-2 sm:-mx-6 sm:px-6 ${
                             darkMode ? 'bg-gray-900/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'
                         }`}
@@ -360,5 +361,12 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
                 </div>
             </div>
         </header>
+        {/* Reserva espacio en el flujo: el header es fixed en móvil y no ocupa altura */}
+        <div
+            className="md:hidden w-full shrink-0"
+            style={{ height: 'var(--tienda-header-height, 88px)' }}
+            aria-hidden
+        />
+        </>
     )
 }
