@@ -85,7 +85,7 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
 
     return (
         <header
-            className={`z-50 border-b transition-colors duration-300 md:sticky md:top-0 max-md:static ${
+            className={`z-50 border-b transition-colors duration-300 sticky top-0 ${
                 darkMode ? 'bg-gray-900/95 backdrop-blur-sm border-gray-800' : 'bg-white/95 backdrop-blur-sm border-gray-200'
             }`}
         >
@@ -230,12 +230,12 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
                     </div>
                 </div>
 
-                {/* Móvil: franja sticky (medida para drawer); buscador debajo y hace scroll con la página */}
+                {/* Móvil: bloque sticky = barra + cuenta + buscador (misma altura que --tienda-header-height para el drawer) */}
                 <div className="md:hidden">
                     <div
                         ref={mobileStickyNavRef}
-                        className={`sticky top-0 z-[60] -mx-4 border-b px-4 py-2 sm:-mx-6 sm:px-6 ${
-                            darkMode ? 'border-gray-700/80 bg-gray-900/95 backdrop-blur-md' : 'border-gray-200 bg-white/95 backdrop-blur-md'
+                        className={`-mx-4 px-4 py-2 sm:-mx-6 sm:px-6 ${
+                            darkMode ? 'bg-gray-900/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'
                         }`}
                     >
                         <div className="flex items-center gap-1 min-w-0">
@@ -353,10 +353,9 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
                                 </Link>
                             </div>
                         )}
-                    </div>
-
-                    <div className="py-3">
-                        <SearchBar darkMode={darkMode} className="max-w-none w-full" />
+                        <div className="pt-3 pb-1">
+                            <SearchBar darkMode={darkMode} className="max-w-none w-full" />
+                        </div>
                     </div>
                 </div>
             </div>
