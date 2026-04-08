@@ -299,8 +299,10 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                 onToggleLeftSidebar={tieneResultados ? () => setMobileFiltersOpen((v) => !v) : undefined}
             />
             <div
-                className={`relative flex min-h-0 w-full flex-1 md:items-stretch md:gap-0 ${
-                    tieneResultados ? 'md:grid md:grid-cols-[16rem_minmax(0,1fr)]' : ''
+                className={`relative flex min-h-0 w-full flex-1 ${
+                    tieneResultados
+                        ? 'min-h-[calc(100vh-var(--tienda-header-height,0px))] items-stretch md:gap-6'
+                        : ''
                 }`}
             >
                 {tieneResultados && !mobileFiltersOpen && (
@@ -318,12 +320,12 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                     <aside
                         className={`max-md:flex max-md:min-h-0 max-md:flex-col max-md:overflow-hidden max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:w-[min(20rem,90vw)] max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                             mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
-                        } md:translate-x-0 md:fixed md:left-0 md:top-[var(--tienda-header-height,0px)] md:bottom-0 md:z-10 md:flex md:h-full md:min-h-0 md:w-64 md:flex-1 md:flex-col md:overflow-hidden shrink-0 border-r transition-colors duration-300 max-md:border-r md:border-r ${
+                        } min-h-[calc(100vh-var(--tienda-header-height,0px))] md:z-10 md:flex md:h-auto md:min-h-[calc(100vh-var(--tienda-header-height,0px))] md:w-64 md:flex-col md:overflow-hidden md:self-stretch shrink-0 border-r transition-colors duration-300 max-md:border-r ${
                             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                         }`}
                         {...drawerTouchProps}
                     >
-                        <div className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain p-6">
+                        <div className="flex min-h-0 flex-1 flex-col space-y-8 p-6 max-md:overflow-y-auto max-md:overscroll-contain md:overflow-hidden">
                             <div>
                                 <h3 className={`text-sm font-bold uppercase mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     ORDENAR POR
