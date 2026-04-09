@@ -157,12 +157,16 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                         <div className={`rounded-xl border overflow-hidden ${cardBg} sticky top-20`}>
                             <div
                                 className={`grid grid-cols-1 gap-3 p-3 sm:p-4 ${
-                                    imagenes.length > 1 ? 'md:grid-cols-[auto_minmax(0,1fr)]' : ''
+                                    imagenes.length > 1
+                                        ? 'max-md:landscape:grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[auto_minmax(0,1fr)]'
+                                        : ''
                                 }`}
                             >
-                                {/* Miniaturas: horizontal en móvil, vertical en md+; imagen grande ocupa el resto (minmax evita colapso en landscape) */}
+                                {/* Miniaturas: retrato apilado (orden vía portrait:); landscape estrecho = fila izq. + foto der. DOM = miniaturas | principal */}
                                 {imagenes.length > 1 && (
-                                    <div className="flex sm:flex-col gap-2 shrink-0 overflow-x-auto sm:overflow-y-auto sm:max-h-[360px] py-1 sm:py-0 scrollbar-thin max-md:order-2 max-md:w-full max-md:min-w-0">
+                                    <div
+                                        className="flex shrink-0 gap-2 overflow-x-auto py-1 scrollbar-thin max-md:portrait:order-2 max-md:portrait:w-full max-md:portrait:min-w-0 max-md:landscape:flex-col max-md:landscape:max-h-[min(52vh,300px)] max-md:landscape:overflow-y-auto max-md:landscape:overflow-x-hidden max-md:landscape:w-auto md:flex-col md:overflow-y-auto md:max-h-[360px] md:overflow-x-hidden"
+                                    >
                                         {imagenes.map((url, i) => (
                                             <button
                                                 key={i}
@@ -183,7 +187,7 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                                         ))}
                                     </div>
                                 )}
-                                <div className="relative min-w-0 w-full min-h-[240px] sm:min-h-[320px] lg:min-h-[380px] max-md:order-1 max-md:aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700/50 group">
+                                <div className="relative min-w-0 w-full min-h-[240px] sm:min-h-[320px] lg:min-h-[380px] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700/50 group max-md:portrait:order-1 max-md:portrait:aspect-square max-md:landscape:min-h-[min(42vh,260px)] max-md:landscape:max-h-[min(58vh,360px)]">
                                     <Image
                                         src={mainImage}
                                         alt={titulo.slice(0, 80)}
