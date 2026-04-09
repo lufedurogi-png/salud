@@ -407,7 +407,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                                 </select>
                             </div>
 
-                            <div className="overflow-y-auto max-h-[430px] pr-1 -mr-1">
+                            <div className="pr-1 -mr-1 md:overflow-y-auto md:max-h-[430px]">
                                 <div className="space-y-4 pt-2 border-t border-gray-200 dark:border-gray-600">
                                     {Object.entries(filtrosDinamicos)
                                         .filter(([nombre]) => nombre.toLowerCase() !== 'marca')

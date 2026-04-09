@@ -76,6 +76,7 @@ export function useMobileLeftDrawerSwipe({ isOpen, onOpen, onClose, enabled = tr
         drawerTouchProps: {
             onTouchStart: onDrawerTouchStart,
             onTouchEnd: onDrawerTouchEnd,
+            style: { touchAction: 'pan-y' },
         },
     }
 }
