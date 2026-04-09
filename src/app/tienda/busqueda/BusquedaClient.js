@@ -300,9 +300,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
             />
             <div
                 className={`relative flex min-h-0 w-full flex-1 ${
-                    tieneResultados
-                        ? 'min-h-[calc(100vh-var(--tienda-header-height,0px))] items-stretch md:gap-6'
-                        : ''
+                    tieneResultados ? 'md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:items-stretch md:gap-0' : ''
                 }`}
             >
                 {tieneResultados && !mobileFiltersOpen && (
@@ -320,12 +318,12 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                     <aside
                         className={`max-md:flex max-md:min-h-0 max-md:flex-col max-md:overflow-hidden max-md:fixed max-md:left-0 max-md:z-40 max-md:bottom-0 max-md:top-[var(--tienda-header-height)] max-md:w-[min(20rem,90vw)] max-md:shadow-xl max-md:transition-transform max-md:duration-300 ${
                             mobileFiltersOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
-                        } min-h-[calc(100vh-var(--tienda-header-height,0px))] md:z-10 md:flex md:h-auto md:min-h-[calc(100vh-var(--tienda-header-height,0px))] md:w-64 md:flex-col md:overflow-hidden md:self-stretch shrink-0 border-r transition-colors duration-300 max-md:border-r ${
+                        } md:translate-x-0 md:relative md:z-10 md:flex md:h-full md:min-h-0 md:w-full md:flex-1 md:flex-col md:overflow-hidden shrink-0 border-r transition-colors duration-300 max-md:border-r md:border-r ${
                             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                         }`}
                         {...drawerTouchProps}
                     >
-                        <div className="flex min-h-0 flex-1 flex-col space-y-8 p-6 max-md:overflow-y-auto max-md:overscroll-contain md:overflow-hidden">
+                        <div className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain p-6">
                             <div>
                                 <h3 className={`text-sm font-bold uppercase mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     ORDENAR POR
@@ -407,7 +405,7 @@ export default function BusquedaClient({ initialData = null, initialQuery = '' }
                                 </select>
                             </div>
 
-                            <div className="pr-1 -mr-1 md:overflow-y-auto md:max-h-[430px]">
+                            <div className="overflow-y-auto max-h-[430px] pr-1 -mr-1">
                                 <div className="space-y-4 pt-2 border-t border-gray-200 dark:border-gray-600">
                                     {Object.entries(filtrosDinamicos)
                                         .filter(([nombre]) => nombre.toLowerCase() !== 'marca')
