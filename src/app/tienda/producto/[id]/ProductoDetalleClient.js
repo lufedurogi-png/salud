@@ -155,8 +155,12 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                     {/* Columna izquierda: galería tipo Amazon */}
                     <div className="lg:col-span-5 xl:col-span-5">
                         <div className={`rounded-xl border overflow-hidden ${cardBg} sticky top-20`}>
-                            <div className="flex flex-row-reverse sm:flex-row max-md:flex-col gap-3 p-3 sm:p-4">
-                                {/* Miniaturas: horizontal en móvil, vertical en sm+ (solo max-md: apilado imagen arriba + tira horizontal abajo) */}
+                            <div
+                                className={`grid grid-cols-1 gap-3 p-3 sm:p-4 ${
+                                    imagenes.length > 1 ? 'md:grid-cols-[auto_minmax(0,1fr)]' : ''
+                                }`}
+                            >
+                                {/* Miniaturas: horizontal en móvil, vertical en md+; imagen grande ocupa el resto (minmax evita colapso en landscape) */}
                                 {imagenes.length > 1 && (
                                     <div className="flex sm:flex-col gap-2 shrink-0 overflow-x-auto sm:overflow-y-auto sm:max-h-[360px] py-1 sm:py-0 scrollbar-thin max-md:order-2 max-md:w-full max-md:min-w-0">
                                         {imagenes.map((url, i) => (
@@ -179,7 +183,7 @@ export default function ProductoDetalleClient({ clave, initialProducto = null, e
                                         ))}
                                     </div>
                                 )}
-                                <div className="relative flex-1 min-h-[240px] sm:min-h-[320px] lg:min-h-[380px] max-md:order-1 max-md:aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700/50 group">
+                                <div className="relative min-w-0 w-full min-h-[240px] sm:min-h-[320px] lg:min-h-[380px] max-md:order-1 max-md:aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700/50 group">
                                     <Image
                                         src={mainImage}
                                         alt={titulo.slice(0, 80)}
