@@ -182,6 +182,45 @@ export async function capturePayPalOrder(order_id) {
     }
 }
 
+/** Checkout Pro: crea preferencia y devuelve init_point (sandbox o producción). */
+export async function createMercadoPagoPreference({ back_urls, direccion_envio_id, datos_facturacion_id }) {
+    try {
+        const { data } = await axios.post('/mercadopago/preferences', {
+            back_urls,
+            direccion_envio_id,
+            datos_facturacion_id,
+        })
+        if (data?.success && data?.data?.init_point) {
+            return data.data
+        }
+        throw new Error(data?.message || 'No se pudo iniciar Mercado Pago')
+    } catch (err) {
+        if (err?.response || err?.isAxiosError) {
+            throw new Error(apiErrorMessage(err, 'No se pudo iniciar Mercado Pago'))
+        }
+        throw err
+    }
+}
+
+export async function confirmMercadoPagoPayment({ payment_id, preference_id }) {
+    try {
+        const { data } = await axios.post('/mercadopago/payments/confirm', {
+            payment_id: String(payment_id),
+            preference_id: preference_id != null ? String(preference_id) : undefined,
+        })
+        if (data?.success && data?.data) {
+            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(CARRITO_CHANGE_EVENT))
+            return data.data
+        }
+        throw new Error(data?.message || 'No se pudo confirmar el pago')
+    } catch (err) {
+        if (err?.response || err?.isAxiosError) {
+            throw new Error(apiErrorMessage(err, 'No se pudo confirmar el pago'))
+        }
+        throw err
+    }
+}
+
 export { CARRITO_CHANGE_EVENT }
 
 /**

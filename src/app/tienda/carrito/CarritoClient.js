@@ -17,6 +17,8 @@ import {
     checkoutCart,
     createPayPalOrder,
     capturePayPalOrder,
+    createMercadoPagoPreference,
+    confirmMercadoPagoPayment,
 } from '@/lib/carrito'
 import LoginRequiredModal from '@/components/LoginRequiredModal'
 import CheckoutModal from '@/components/CheckoutModal'
@@ -195,7 +197,18 @@ export default function CarritoClient() {
             const cancelUrl = `${base}?paypal_cancel=1`
 
             if (payload.metodoPago === 'mercadopago') {
-                setCheckoutError('Mercado Pago estará disponible próximamente.')
+                const { init_point: mpUrl } = await createMercadoPagoPreference({
+                    back_urls: {
+                        success: `${base}?mp_ok=1`,
+                        failure: `${base}?mp_cancel=1`,
+                        pending: `${base}?mp_pending=1`,
+                    },
+                    direccion_envio_id: direccionEnvioId,
+                    datos_facturacion_id: datosFacturacionId,
+                })
+                if (typeof window !== 'undefined' && mpUrl) {
+                    window.location.assign(mpUrl)
+                }
                 return
             }
 
@@ -269,6 +282,62 @@ export default function CarritoClient() {
                 sessionStorage.removeItem(lockKey)
                 setCheckoutError(
                     e?.message || e?.response?.data?.message || 'Error al confirmar PayPal'
+                )
+                setPagarModal(true)
+            } finally {
+                setCheckoutLoading(false)
+            }
+        })()
+    }, [mounted, isLogged, router, searchParams])
+
+    useEffect(() => {
+        if (!mounted || !isLogged) return
+        if (searchParams.get('mp_cancel') === '1') {
+            setCheckoutError('Pago cancelado o rechazado en Mercado Pago.')
+            router.replace('/tienda/carrito', { scroll: false })
+            return
+        }
+        if (searchParams.get('mp_pending') === '1') {
+            setCheckoutError('Tu pago está pendiente de confirmación (ej. OXXO o SPEI). Revisa Mis pedidos más tarde.')
+            router.replace('/tienda/carrito', { scroll: false })
+            return
+        }
+        if (searchParams.get('mp_ok') !== '1') return
+        const paymentId =
+            searchParams.get('payment_id') || searchParams.get('collection_id')
+        const preferenceId = searchParams.get('preference_id')
+        if (!paymentId) {
+            setCheckoutError('No se recibió el pago de Mercado Pago.')
+            router.replace('/tienda/carrito', { scroll: false })
+            return
+        }
+        if (typeof window === 'undefined') return
+
+        const doneKey = `mp_confirm_done_${paymentId}`
+        if (sessionStorage.getItem(doneKey)) {
+            router.replace('/tienda/carrito', { scroll: false })
+            router.push('/dashboard?tab=pedidos')
+            return
+        }
+        const lockKey = `mp_confirm_lock_${paymentId}`
+        if (sessionStorage.getItem(lockKey)) return
+        sessionStorage.setItem(lockKey, '1')
+        ;(async () => {
+            setCheckoutLoading(true)
+            setCheckoutError(null)
+            try {
+                await confirmMercadoPagoPayment({
+                    payment_id: paymentId,
+                    preference_id: preferenceId || undefined,
+                })
+                sessionStorage.setItem(doneKey, '1')
+                sessionStorage.removeItem(lockKey)
+                router.replace('/tienda/carrito', { scroll: false })
+                router.push('/dashboard?tab=pedidos')
+            } catch (e) {
+                sessionStorage.removeItem(lockKey)
+                setCheckoutError(
+                    e?.message || e?.response?.data?.message || 'Error al confirmar Mercado Pago'
                 )
                 setPagarModal(true)
             } finally {
