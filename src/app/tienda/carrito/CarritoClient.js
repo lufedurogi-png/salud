@@ -172,17 +172,18 @@ export default function CarritoClient() {
             setCheckoutError('Elige un método de pago.')
             return
         }
-        if (payload.direccionId == null || payload.facturacionId == null) {
-            setCheckoutError('Selecciona dirección de envío y datos de facturación en las pestañas del modal.')
+        if (payload.direccionId == null) {
+            setCheckoutError('Selecciona dirección de envío en la pestaña correspondiente.')
             return
         }
         const direccionEnvioId = Number(payload.direccionId)
-        const datosFacturacionId = Number(payload.facturacionId)
+        const usarFacturacion = payload?.usarFacturacion !== false
+        const datosFacturacionId = usarFacturacion ? Number(payload.facturacionId) : null
         if (!Number.isInteger(direccionEnvioId) || direccionEnvioId < 1) {
             setCheckoutError('La dirección de envío seleccionada no es válida.')
             return
         }
-        if (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1) {
+        if (usarFacturacion && (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1)) {
             setCheckoutError('Los datos de facturación seleccionados no son válidos.')
             return
         }
@@ -204,7 +205,7 @@ export default function CarritoClient() {
                         pending: `${base}?mp_pending=1`,
                     },
                     direccion_envio_id: direccionEnvioId,
-                    datos_facturacion_id: datosFacturacionId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
                 })
                 if (typeof window !== 'undefined' && mpUrl) {
                     window.location.assign(mpUrl)
@@ -217,7 +218,7 @@ export default function CarritoClient() {
                     return_url: returnUrl,
                     cancel_url: cancelUrl,
                     direccion_envio_id: direccionEnvioId,
-                    datos_facturacion_id: datosFacturacionId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
                 })
                 if (typeof window !== 'undefined' && approveUrl) {
                     window.location.assign(approveUrl)
@@ -229,7 +230,7 @@ export default function CarritoClient() {
                 await checkoutCart({
                     metodo_pago: 'tarjeta',
                     direccion_envio_id: direccionEnvioId,
-                    datos_facturacion_id: datosFacturacionId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
                 })
                 setPagarModal(false)
                 router.push('/dashboard?tab=pedidos')

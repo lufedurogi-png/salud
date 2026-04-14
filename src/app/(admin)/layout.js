@@ -15,6 +15,7 @@ const navItems = [
     { href: '/admin-respaldo', label: 'Respaldo BD', icon: 'M12 8c-3.314 0-6 1.343-6 3v2c0 1.657 2.686 3 6 3s6-1.343 6-3v-2c0-1.657-2.686-3-6-3zm0 8c-3.314 0-6-1.343-6-3v3c0 1.657 2.686 3 6 3s6-1.343 6-3v-3c0 1.657-2.686 3-6 3zm0 5c-3.314 0-6-1.343-6-3v3c0 1.657 2.686 3 6 3s6-1.343 6-3v-3c0 1.657-2.686 3-6 3z' },
     { href: '/admin-pedidos', label: 'Pedidos', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
     { href: '/admin-cotizaciones-invitado', label: 'Cotiz. invitados', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { href: '/admin-metodos-pago', label: 'Métodos pago', iconImage: '/Imagenes/icons_metodosdepago.png' },
     { href: '/admin-publicidad', label: 'Publicidad', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
     { href: '/admin-equipo', label: 'Equipo desarrollo', iconImage: '/Imagenes/icon_equipo.png' },
     { href: '/admin-productos-manuales', label: 'Productos manuales', icon: 'M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },

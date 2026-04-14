@@ -17,6 +17,8 @@ import {
     syncCartItems,
     createPayPalOrder,
     capturePayPalOrder,
+    createMercadoPagoPreference,
+    confirmMercadoPagoPayment,
     checkoutCart,
     PAYPAL_POST_CAPTURE_META_KEY,
 } from '@/lib/carrito'
@@ -185,17 +187,18 @@ export default function CotizacionesClient() {
             setCheckoutError('Elige un método de pago.')
             return
         }
-        if (payload.direccionId == null || payload.facturacionId == null) {
-            setCheckoutError('Selecciona dirección de envío y datos de facturación en las pestañas del modal.')
+        if (payload.direccionId == null) {
+            setCheckoutError('Selecciona dirección de envío en la pestaña correspondiente.')
             return
         }
         const direccionEnvioId = Number(payload.direccionId)
-        const datosFacturacionId = Number(payload.facturacionId)
+        const usarFacturacion = payload?.usarFacturacion !== false
+        const datosFacturacionId = usarFacturacion ? Number(payload.facturacionId) : null
         if (!Number.isInteger(direccionEnvioId) || direccionEnvioId < 1) {
             setCheckoutError('La dirección de envío seleccionada no es válida.')
             return
         }
-        if (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1) {
+        if (usarFacturacion && (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1)) {
             setCheckoutError('Los datos de facturación seleccionados no son válidos.')
             return
         }
@@ -217,7 +220,18 @@ export default function CotizacionesClient() {
             const cancelUrl = `${base}?paypal_cancel=1`
 
             if (payload.metodoPago === 'mercadopago') {
-                setCheckoutError('Mercado Pago estará disponible próximamente.')
+                const { init_point: mpUrl } = await createMercadoPagoPreference({
+                    back_urls: {
+                        success: `${base}?mp_ok=1`,
+                        failure: `${base}?mp_cancel=1`,
+                        pending: `${base}?mp_pending=1`,
+                    },
+                    direccion_envio_id: direccionEnvioId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
+                })
+                if (typeof window !== 'undefined' && mpUrl) {
+                    window.location.assign(mpUrl)
+                }
                 return
             }
 
@@ -232,7 +246,7 @@ export default function CotizacionesClient() {
                     return_url: returnUrl,
                     cancel_url: cancelUrl,
                     direccion_envio_id: direccionEnvioId,
-                    datos_facturacion_id: datosFacturacionId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
                 })
                 if (typeof window !== 'undefined' && approveUrl) {
                     window.location.assign(approveUrl)
@@ -244,7 +258,7 @@ export default function CotizacionesClient() {
                 await checkoutCart({
                     metodo_pago: 'tarjeta',
                     direccion_envio_id: direccionEnvioId,
-                    datos_facturacion_id: datosFacturacionId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
                 })
                 clearItems()
                 refresh()
@@ -313,6 +327,65 @@ export default function CotizacionesClient() {
                 sessionStorage.removeItem(lockKey)
                 setCheckoutError(
                     e?.message || e?.response?.data?.message || 'Error al confirmar PayPal'
+                )
+                setPagarModal(true)
+            } finally {
+                setCheckoutLoading(false)
+            }
+        })()
+    // clearItems/refresh solo se usan dentro del async; no en deps (evita re-ejecuciones).
+    }, [mounted, isLogged, router, searchParams])
+
+    useEffect(() => {
+        if (!mounted || !isLogged) return
+        if (searchParams.get('mp_cancel') === '1') {
+            setCheckoutError('Pago cancelado o rechazado en Mercado Pago.')
+            router.replace('/tienda/cotizaciones', { scroll: false })
+            return
+        }
+        if (searchParams.get('mp_pending') === '1') {
+            setCheckoutError('Tu pago está pendiente de confirmación (ej. OXXO o SPEI). Revisa Mis pedidos más tarde.')
+            router.replace('/tienda/cotizaciones', { scroll: false })
+            return
+        }
+        if (searchParams.get('mp_ok') !== '1') return
+        const paymentId =
+            searchParams.get('payment_id') || searchParams.get('collection_id')
+        const preferenceId = searchParams.get('preference_id')
+        if (!paymentId) {
+            setCheckoutError('No se recibió el pago de Mercado Pago.')
+            router.replace('/tienda/cotizaciones', { scroll: false })
+            return
+        }
+        if (typeof window === 'undefined') return
+
+        const doneKey = `mp_confirm_done_${paymentId}`
+        if (sessionStorage.getItem(doneKey)) {
+            router.replace('/tienda/cotizaciones', { scroll: false })
+            router.push('/dashboard?tab=pedidos')
+            return
+        }
+        const lockKey = `mp_confirm_lock_${paymentId}`
+        if (sessionStorage.getItem(lockKey)) return
+        sessionStorage.setItem(lockKey, '1')
+        ;(async () => {
+            setCheckoutLoading(true)
+            setCheckoutError(null)
+            try {
+                await confirmMercadoPagoPayment({
+                    payment_id: paymentId,
+                    preference_id: preferenceId || undefined,
+                })
+                sessionStorage.setItem(doneKey, '1')
+                sessionStorage.removeItem(lockKey)
+                clearItems()
+                refresh()
+                router.replace('/tienda/cotizaciones', { scroll: false })
+                router.push('/dashboard?tab=pedidos')
+            } catch (e) {
+                sessionStorage.removeItem(lockKey)
+                setCheckoutError(
+                    e?.message || e?.response?.data?.message || 'Error al confirmar Mercado Pago'
                 )
                 setPagarModal(true)
             } finally {

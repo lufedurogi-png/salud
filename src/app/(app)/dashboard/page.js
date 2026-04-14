@@ -19,6 +19,8 @@ import {
     syncCartItems,
     createPayPalOrder,
     capturePayPalOrder,
+    createMercadoPagoPreference,
+    confirmMercadoPagoPayment,
     checkoutCart,
     PAYPAL_POST_CAPTURE_META_KEY,
 } from '@/lib/carrito'
@@ -721,17 +723,18 @@ function DashboardInner() {
             setCheckoutCotizacionError('Elige un método de pago.')
             return
         }
-        if (payload.direccionId == null || payload.facturacionId == null) {
-            setCheckoutCotizacionError('Selecciona dirección de envío y datos de facturación en las pestañas del modal.')
+        if (payload.direccionId == null) {
+            setCheckoutCotizacionError('Selecciona dirección de envío en la pestaña correspondiente.')
             return
         }
         const direccionEnvioId = Number(payload.direccionId)
-        const datosFacturacionId = Number(payload.facturacionId)
+        const usarFacturacion = payload?.usarFacturacion !== false
+        const datosFacturacionId = usarFacturacion ? Number(payload.facturacionId) : null
         if (!Number.isInteger(direccionEnvioId) || direccionEnvioId < 1) {
             setCheckoutCotizacionError('La dirección de envío seleccionada no es válida.')
             return
         }
-        if (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1) {
+        if (usarFacturacion && (!Number.isInteger(datosFacturacionId) || datosFacturacionId < 1)) {
             setCheckoutCotizacionError('Los datos de facturación seleccionados no son válidos.')
             return
         }
@@ -753,7 +756,24 @@ function DashboardInner() {
             const cancelUrl = `${base}?tab=cotizaciones&paypal_cancel=1`
 
             if (payload.metodoPago === 'mercadopago') {
-                setCheckoutCotizacionError('Mercado Pago estará disponible próximamente.')
+                const { init_point: mpUrl } = await createMercadoPagoPreference({
+                    back_urls: {
+                        success: `${base}?tab=pedidos&mp_ok=1`,
+                        failure: `${base}?tab=cotizaciones&mp_cancel=1`,
+                        pending: `${base}?tab=cotizaciones&mp_pending=1`,
+                    },
+                    direccion_envio_id: direccionEnvioId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
+                })
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem(
+                        'mp_post_confirm_meta',
+                        JSON.stringify({ source: 'cotizacion-dashboard', cotizacionId: cot.id })
+                    )
+                }
+                if (typeof window !== 'undefined' && mpUrl) {
+                    window.location.assign(mpUrl)
+                }
                 return
             }
 
@@ -768,7 +788,7 @@ function DashboardInner() {
                     return_url: returnUrl,
                     cancel_url: cancelUrl,
                     direccion_envio_id: direccionEnvioId,
-                    datos_facturacion_id: datosFacturacionId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
                 })
                 if (typeof window !== 'undefined' && approveUrl) {
                     window.location.assign(approveUrl)
@@ -780,7 +800,7 @@ function DashboardInner() {
                 await checkoutCart({
                     metodo_pago: 'tarjeta',
                     direccion_envio_id: direccionEnvioId,
-                    datos_facturacion_id: datosFacturacionId,
+                    datos_facturacion_id: datosFacturacionId ?? undefined,
                 })
                 await handleMoverCotizacionAPapelera(cot.id)
                 setPagarCotizacionModalOpen(false)
@@ -797,6 +817,79 @@ function DashboardInner() {
             setCheckoutCotizacionLoading(false)
         }
     }, [cotizacionIdParaPagar, cotizacionesGuardadas, user?.id, handleMoverCotizacionAPapelera, fetchPedidos])
+
+    useEffect(() => {
+        if (!dashboardMounted) return
+        if (searchParams.get('mp_cancel') === '1') {
+            setCheckoutCotizacionError('Pago cancelado o rechazado en Mercado Pago.')
+            try {
+                sessionStorage.removeItem('mp_post_confirm_meta')
+            } catch { /* ignore */ }
+            router.replace('/dashboard?tab=cotizaciones', { scroll: false })
+            return
+        }
+        if (searchParams.get('mp_pending') === '1') {
+            setCheckoutCotizacionError('Tu pago está pendiente de confirmación (ej. OXXO o SPEI). Revisa Mis pedidos más tarde.')
+            try {
+                sessionStorage.removeItem('mp_post_confirm_meta')
+            } catch { /* ignore */ }
+            router.replace('/dashboard?tab=cotizaciones', { scroll: false })
+            return
+        }
+        if (searchParams.get('mp_ok') !== '1') return
+        const paymentId = searchParams.get('payment_id') || searchParams.get('collection_id')
+        const preferenceId = searchParams.get('preference_id')
+        if (!paymentId) {
+            setCheckoutCotizacionError('No se recibió el pago de Mercado Pago.')
+            router.replace('/dashboard?tab=pedidos', { scroll: false })
+            return
+        }
+        if (typeof window === 'undefined') return
+
+        const doneKey = `mp_confirm_done_${paymentId}`
+        if (sessionStorage.getItem(doneKey)) {
+            router.replace('/dashboard?tab=pedidos', { scroll: false })
+            return
+        }
+        const lockKey = `mp_confirm_lock_${paymentId}`
+        if (sessionStorage.getItem(lockKey)) return
+        sessionStorage.setItem(lockKey, '1')
+        ;(async () => {
+            setCheckoutCotizacionLoading(true)
+            setCheckoutCotizacionError(null)
+            try {
+                await confirmMercadoPagoPayment({
+                    payment_id: paymentId,
+                    preference_id: preferenceId || undefined,
+                })
+                sessionStorage.setItem(doneKey, '1')
+                sessionStorage.removeItem(lockKey)
+                let meta = null
+                try {
+                    meta = JSON.parse(sessionStorage.getItem('mp_post_confirm_meta') || 'null')
+                } catch {
+                    meta = null
+                }
+                sessionStorage.removeItem('mp_post_confirm_meta')
+                if (meta?.source === 'cotizacion-dashboard' && meta.cotizacionId != null) {
+                    await handleMoverCotizacionAPapelera(meta.cotizacionId)
+                }
+                setCotizacionIdParaPagar(null)
+                setPagarCotizacionModalOpen(false)
+                setActiveTab('pedidos')
+                await fetchPedidos()
+                router.replace('/dashboard?tab=pedidos', { scroll: false })
+            } catch (e) {
+                sessionStorage.removeItem(lockKey)
+                setCheckoutCotizacionError(
+                    e?.message || e?.response?.data?.message || 'Error al confirmar Mercado Pago'
+                )
+                setPagarCotizacionModalOpen(true)
+            } finally {
+                setCheckoutCotizacionLoading(false)
+            }
+        })()
+    }, [dashboardMounted, searchParams, router, handleMoverCotizacionAPapelera, fetchPedidos])
 
     useEffect(() => {
         if (!dashboardMounted) return

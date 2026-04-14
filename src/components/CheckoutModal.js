@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import axios from '@/lib/axios'
 
+const DEFAULT_PAYMENT_FLAGS = {
+    paypal: true,
+    mercadopago: true,
+    tarjeta: true,
+}
+
 function maskNumber(num) {
     if (!num || typeof num !== 'string') return '••••'
     const digits = num.replace(/\D/g, '')
@@ -30,9 +36,16 @@ export default function CheckoutModal({
     const [datosFacturacion, setDatosFacturacion] = useState([])
     const [loadingDir, setLoadingDir] = useState(false)
     const [loadingFac, setLoadingFac] = useState(false)
+    const [showAddDireccion, setShowAddDireccion] = useState(false)
+    const [showAddFacturacion, setShowAddFacturacion] = useState(false)
+    const [savingDireccion, setSavingDireccion] = useState(false)
+    const [savingFacturacion, setSavingFacturacion] = useState(false)
+    const [direccionErrors, setDireccionErrors] = useState({})
+    const [facturacionErrors, setFacturacionErrors] = useState({})
 
     const [selectedDireccionId, setSelectedDireccionId] = useState(null)
     const [selectedFacturacionId, setSelectedFacturacionId] = useState(null)
+    const [usarFacturacion, setUsarFacturacion] = useState(true)
     const [metodoPago, setMetodoPago] = useState(null) // 'paypal' | 'mercadopago' | 'tarjeta'
     const [selectedTarjetaId, setSelectedTarjetaId] = useState(null)
 
@@ -44,6 +57,35 @@ export default function CheckoutModal({
     const [cardFormErrors, setCardFormErrors] = useState({})
     const [savingCard, setSavingCard] = useState(false)
     const [cvvPago, setCvvPago] = useState('') // CVV al pagar con tarjeta guardada (no se guarda)
+    const [paymentFlags, setPaymentFlags] = useState(DEFAULT_PAYMENT_FLAGS)
+    const [loadingPaymentFlags, setLoadingPaymentFlags] = useState(false)
+    const [direccionForm, setDireccionForm] = useState({
+        nombre: '',
+        telefono: '',
+        calle: '',
+        numero_exterior: '',
+        numero_interior: '',
+        colonia: '',
+        ciudad: '',
+        estado: '',
+        codigo_postal: '',
+        referencias: '',
+        es_principal: false,
+    })
+    const [facturacionForm, setFacturacionForm] = useState({
+        razon_social: '',
+        rfc: '',
+        calle: '',
+        numero_exterior: '',
+        numero_interior: '',
+        colonia: '',
+        ciudad: '',
+        estado: '',
+        codigo_postal: '',
+        email_facturacion: '',
+        telefono: '',
+        es_principal: false,
+    })
 
     const fetchCards = useCallback(async () => {
         setLoadingCards(true)
@@ -93,14 +135,44 @@ export default function CheckoutModal({
         }
     }, [])
 
+    const fetchPaymentFlags = useCallback(async () => {
+        setLoadingPaymentFlags(true)
+        try {
+            const { data } = await axios.get('/metodos-pago')
+            const flags = data?.success ? data?.data?.flags : null
+            setPaymentFlags({
+                paypal: flags?.paypal !== false,
+                mercadopago: flags?.mercadopago !== false,
+                tarjeta: flags?.tarjeta !== false,
+            })
+        } catch {
+            setPaymentFlags(DEFAULT_PAYMENT_FLAGS)
+        } finally {
+            setLoadingPaymentFlags(false)
+        }
+    }, [])
+
     useEffect(() => {
         if (open) {
             fetchDirecciones()
             fetchDatosFacturacion()
             fetchCards()
+            fetchPaymentFlags()
+            setUsarFacturacion(true)
             setCvvPago('')
+            setShowAddDireccion(false)
+            setShowAddFacturacion(false)
+            setDireccionErrors({})
+            setFacturacionErrors({})
         }
-    }, [open, fetchDirecciones, fetchDatosFacturacion, fetchCards])
+    }, [open, fetchDirecciones, fetchDatosFacturacion, fetchCards, fetchPaymentFlags])
+
+    useEffect(() => {
+        if (!usarFacturacion) return
+        if (selectedFacturacionId != null) return
+        const principal = datosFacturacion.find((d) => d.es_principal)
+        setSelectedFacturacionId(principal?.id ?? datosFacturacion[0]?.id ?? null)
+    }, [usarFacturacion, selectedFacturacionId, datosFacturacion])
 
     useEffect(() => {
         setCvvPago('')
@@ -199,10 +271,106 @@ export default function CheckoutModal({
         setShowAddCard(true)
     }
 
+    const resetDireccionForm = () => {
+        setDireccionForm({
+            nombre: '',
+            telefono: '',
+            calle: '',
+            numero_exterior: '',
+            numero_interior: '',
+            colonia: '',
+            ciudad: '',
+            estado: '',
+            codigo_postal: '',
+            referencias: '',
+            es_principal: direcciones.length === 0,
+        })
+        setDireccionErrors({})
+    }
+
+    const resetFacturacionForm = () => {
+        setFacturacionForm({
+            razon_social: '',
+            rfc: '',
+            calle: '',
+            numero_exterior: '',
+            numero_interior: '',
+            colonia: '',
+            ciudad: '',
+            estado: '',
+            codigo_postal: '',
+            email_facturacion: '',
+            telefono: '',
+            es_principal: datosFacturacion.length === 0,
+        })
+        setFacturacionErrors({})
+    }
+
+    const openAddDireccionModal = () => {
+        resetDireccionForm()
+        setShowAddDireccion(true)
+    }
+
+    const openAddFacturacionModal = () => {
+        resetFacturacionForm()
+        setShowAddFacturacion(true)
+    }
+
+    const handleCreateDireccion = async (e) => {
+        e.preventDefault()
+        setSavingDireccion(true)
+        setDireccionErrors({})
+        try {
+            const payload = {
+                ...direccionForm,
+                codigo_postal: String(direccionForm.codigo_postal || '').slice(0, 5),
+                es_principal: !!direccionForm.es_principal,
+            }
+            const { data } = await axios.post('/direcciones-envio', payload)
+            const createdId = data?.data?.id ?? null
+            await fetchDirecciones()
+            if (createdId != null) setSelectedDireccionId(createdId)
+            setShowAddDireccion(false)
+        } catch (err) {
+            const errors = err?.response?.data?.errors || {}
+            const message = err?.response?.data?.message || err?.message || 'No se pudo guardar la dirección.'
+            setDireccionErrors({ ...errors, general: errors?.general || [message] })
+        } finally {
+            setSavingDireccion(false)
+        }
+    }
+
+    const handleCreateFacturacion = async (e) => {
+        e.preventDefault()
+        setSavingFacturacion(true)
+        setFacturacionErrors({})
+        try {
+            const payload = {
+                ...facturacionForm,
+                rfc: String(facturacionForm.rfc || '').toUpperCase().replace(/\s/g, ''),
+                codigo_postal: String(facturacionForm.codigo_postal || '').slice(0, 5),
+                es_principal: !!facturacionForm.es_principal,
+            }
+            const { data } = await axios.post('/datos-facturacion', payload)
+            const createdId = data?.data?.id ?? null
+            await fetchDatosFacturacion()
+            if (createdId != null) setSelectedFacturacionId(createdId)
+            setUsarFacturacion(true)
+            setShowAddFacturacion(false)
+        } catch (err) {
+            const errors = err?.response?.data?.errors || {}
+            const message = err?.response?.data?.message || err?.message || 'No se pudieron guardar los datos de facturación.'
+            setFacturacionErrors({ ...errors, general: errors?.general || [message] })
+        } finally {
+            setSavingFacturacion(false)
+        }
+    }
+
     const handleConfirm = () => {
         onConfirm({
             direccionId: selectedDireccionId,
-            facturacionId: selectedFacturacionId,
+            facturacionId: usarFacturacion ? selectedFacturacionId : null,
+            usarFacturacion,
             metodoPago,
             tarjetaId: metodoPago === 'tarjeta' ? selectedTarjetaId : null,
             cvvPago: metodoPago === 'tarjeta' ? cvvPago.trim() : null,
@@ -210,10 +378,35 @@ export default function CheckoutModal({
     }
 
     const selectedCard = cards.find((c) => c.id === selectedTarjetaId)
+    const paypalEnabled = paymentFlags.paypal !== false
+    const mercadoPagoEnabled = paymentFlags.mercadopago !== false
+    const tarjetaEnabled = paymentFlags.tarjeta !== false
+    const availableMethods = [
+        paypalEnabled ? 'paypal' : null,
+        mercadoPagoEnabled ? 'mercadopago' : null,
+        tarjetaEnabled ? 'tarjeta' : null,
+    ].filter(Boolean)
+    const anyMethodEnabled = availableMethods.length > 0
+
+    useEffect(() => {
+        if (!open) return
+        if (!metodoPago || !availableMethods.includes(metodoPago)) {
+            setMetodoPago(availableMethods[0] ?? null)
+        }
+    }, [open, metodoPago, availableMethods])
+
     const cvvPagoValido = /^\d{3,4}$/.test(cvvPago.trim())
-    const tieneTarjetaValida = metodoPago === 'tarjeta' && selectedTarjetaId != null && cvvPagoValido
-    const metodoPagoValido = metodoPago === 'paypal' || metodoPago === 'mercadopago' || tieneTarjetaValida
-    const canConfirm = selectedDireccionId != null && selectedFacturacionId != null && metodoPagoValido
+    const tieneTarjetaValida = tarjetaEnabled && metodoPago === 'tarjeta' && selectedTarjetaId != null && cvvPagoValido
+    const metodoPagoValido =
+        (paypalEnabled && metodoPago === 'paypal') ||
+        (mercadoPagoEnabled && metodoPago === 'mercadopago') ||
+        tieneTarjetaValida
+    const canConfirm =
+        selectedDireccionId != null &&
+        (!usarFacturacion || selectedFacturacionId != null) &&
+        metodoPagoValido &&
+        anyMethodEnabled &&
+        !loadingPaymentFlags
 
     if (!open) return null
 
@@ -279,14 +472,21 @@ export default function CheckoutModal({
                     {/* Contacto / Envío */}
                     {step === 'contacto' && (
                         <div className="space-y-3">
-                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                Elige la dirección de envío. La marcada como principal en tu dashboard aparece por defecto.
-                            </p>
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={openAddDireccionModal}
+                                    className="shrink-0 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold bg-[#FF8000] hover:bg-[#e67300] text-white transition-colors"
+                                >
+                                    <span className="text-sm leading-none">+</span>
+                                    Ingresar nuevos datos
+                                </button>
+                            </div>
                             {loadingDir ? (
                                 <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Cargando direcciones…</p>
                             ) : direcciones.length === 0 ? (
                                 <p className={darkMode ? 'text-amber-400' : 'text-amber-700'}>
-                                    No tienes direcciones. Agrega una en tu Dashboard (Contacto/Envío).
+                                    No tienes direcciones todavía. Registra una aquí mismo para continuar.
                                 </p>
                             ) : (
                                 <div className="space-y-2">
@@ -327,14 +527,58 @@ export default function CheckoutModal({
                     {/* Facturación */}
                     {step === 'facturacion' && (
                         <div className="space-y-3">
-                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                Elige los datos de facturación. El predeterminado de tu dashboard está seleccionado.
-                            </p>
-                            {loadingFac ? (
+                            <div
+                                className={`rounded-xl border p-3 flex items-center justify-between gap-3 ${
+                                    darkMode ? 'bg-gray-700/40 border-gray-600' : 'bg-gray-50 border-gray-200'
+                                }`}
+                            >
+                                <div>
+                                    <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        ¿Deseas factura para este pedido?
+                                    </p>
+                                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        Si la desactivas, el pedido se crea sin datos de facturación.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setUsarFacturacion((v) => !v)}
+                                    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                                        usarFacturacion ? 'bg-[#FF8000]' : 'bg-gray-400'
+                                    }`}
+                                    aria-label="Activar o desactivar facturación"
+                                >
+                                    <span
+                                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                            usarFacturacion ? 'translate-x-8' : 'translate-x-1'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={openAddFacturacionModal}
+                                    className="shrink-0 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold bg-[#FF8000] hover:bg-[#e67300] text-white transition-colors"
+                                >
+                                    <span className="text-sm leading-none">+</span>
+                                    Ingresar nuevos datos
+                                </button>
+                            </div>
+                            {!usarFacturacion ? (
+                                <div
+                                    className={`rounded-xl p-3 text-sm border ${
+                                        darkMode ? 'bg-[#FF8000]/15 border-[#FF8000]/50 text-orange-200' : 'bg-orange-50 border-orange-200 text-orange-700'
+                                    }`}
+                                >
+                                    Este pedido no incluirá datos de facturación.
+                                </div>
+                            ) : loadingFac ? (
                                 <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Cargando datos…</p>
                             ) : datosFacturacion.length === 0 ? (
                                 <p className={darkMode ? 'text-amber-400' : 'text-amber-700'}>
-                                    No tienes datos de facturación. Agrega unos en tu Dashboard (Datos de facturación).
+                                    No tienes datos de facturación todavía. Regístralos aquí mismo.
                                 </p>
                             ) : (
                                 <div className="space-y-2">
@@ -381,8 +625,11 @@ export default function CheckoutModal({
 
                             {(() => {
                                 const dSel = direcciones.find((d) => d.id === selectedDireccionId)
-                                const fSel = datosFacturacion.find((f) => f.id === selectedFacturacionId)
-                                if (!dSel || !fSel) return null
+                                const fSel = usarFacturacion
+                                    ? datosFacturacion.find((f) => f.id === selectedFacturacionId)
+                                    : null
+                                if (!dSel) return null
+                                if (usarFacturacion && !fSel) return null
                                 return (
                                     <div
                                         className={`rounded-xl p-3 text-xs border space-y-2 ${
@@ -400,73 +647,96 @@ export default function CheckoutModal({
                                             {dSel.numero_exterior ? ` ${dSel.numero_exterior}` : ''}, {dSel.colonia},{' '}
                                             {dSel.ciudad_nombre || dSel.ciudad}, CP {dSel.codigo_postal}
                                         </p>
-                                        <p>
-                                            <span className="font-semibold text-[#FF8000]">Facturación:</span>{' '}
-                                            {fSel.razon_social} — RFC {fSel.rfc}
-                                        </p>
+                                        {usarFacturacion ? (
+                                            <p>
+                                                <span className="font-semibold text-[#FF8000]">Facturación:</span>{' '}
+                                                {fSel.razon_social} — RFC {fSel.rfc}
+                                            </p>
+                                        ) : (
+                                            <p>
+                                                <span className="font-semibold text-[#FF8000]">Facturación:</span> No solicitada
+                                            </p>
+                                        )}
                                     </div>
                                 )
                             })()}
 
                             {/* Opciones: PayPal, Mercado Pago, Tarjeta */}
                             <div className="grid grid-cols-1 gap-3">
-                                <label
-                                    className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                        metodoPago === 'paypal'
-                                            ? darkMode ? 'border-[#FF8000] bg-[#FF8000]/10' : 'border-[#FF8000] bg-[#FF8000]/5'
-                                            : darkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="metodoPago"
-                                        checked={metodoPago === 'paypal'}
-                                        onChange={() => setMetodoPago('paypal')}
-                                        className="text-[#FF8000] focus:ring-[#FF8000]"
-                                    />
-                                    <Image src="/Imagenes/PayPal.png" alt="PayPal" width={88} height={35} className="object-contain max-w-[88px] max-h-[35px]" />
-                                    <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>PayPal</span>
-                                </label>
-                                <label
-                                    className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                        metodoPago === 'mercadopago'
-                                            ? darkMode ? 'border-[#FF8000] bg-[#FF8000]/10' : 'border-[#FF8000] bg-[#FF8000]/5'
-                                            : darkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="metodoPago"
-                                        checked={metodoPago === 'mercadopago'}
-                                        onChange={() => setMetodoPago('mercadopago')}
-                                        className="text-[#FF8000] focus:ring-[#FF8000]"
-                                    />
-                                    <Image src="/Imagenes/mercado%20pago.png" alt="Mercado Pago" width={80} height={32} className="object-contain" />
-                                    <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Mercado Pago</span>
-                                </label>
-                                <label
-                                    className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                        metodoPago === 'tarjeta'
-                                            ? darkMode ? 'border-[#FF8000] bg-[#FF8000]/10' : 'border-[#FF8000] bg-[#FF8000]/5'
-                                            : darkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="metodoPago"
-                                        checked={metodoPago === 'tarjeta'}
-                                        onChange={() => setMetodoPago('tarjeta')}
-                                        className="text-[#FF8000] focus:ring-[#FF8000]"
-                                    />
-                                    <svg className="w-10 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                    </svg>
-                                    <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Tarjeta de crédito o débito</span>
-                                </label>
+                                {paypalEnabled && (
+                                    <label
+                                        className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                            metodoPago === 'paypal'
+                                                ? darkMode ? 'border-[#FF8000] bg-[#FF8000]/10' : 'border-[#FF8000] bg-[#FF8000]/5'
+                                                : darkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="metodoPago"
+                                            checked={metodoPago === 'paypal'}
+                                            onChange={() => setMetodoPago('paypal')}
+                                            className="text-[#FF8000] focus:ring-[#FF8000]"
+                                        />
+                                        <Image src="/Imagenes/PayPal.png" alt="PayPal" width={88} height={35} className="object-contain max-w-[88px] max-h-[35px]" />
+                                        <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>PayPal</span>
+                                    </label>
+                                )}
+                                {mercadoPagoEnabled && (
+                                    <label
+                                        className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                            metodoPago === 'mercadopago'
+                                                ? darkMode ? 'border-[#FF8000] bg-[#FF8000]/10' : 'border-[#FF8000] bg-[#FF8000]/5'
+                                                : darkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="metodoPago"
+                                            checked={metodoPago === 'mercadopago'}
+                                            onChange={() => setMetodoPago('mercadopago')}
+                                            className="text-[#FF8000] focus:ring-[#FF8000]"
+                                        />
+                                        <Image src="/Imagenes/mercado%20pago.png" alt="Mercado Pago" width={80} height={32} className="object-contain" />
+                                        <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Mercado Pago</span>
+                                    </label>
+                                )}
+                                {tarjetaEnabled && (
+                                    <label
+                                        className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                            metodoPago === 'tarjeta'
+                                                ? darkMode ? 'border-[#FF8000] bg-[#FF8000]/10' : 'border-[#FF8000] bg-[#FF8000]/5'
+                                                : darkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="metodoPago"
+                                            checked={metodoPago === 'tarjeta'}
+                                            onChange={() => setMetodoPago('tarjeta')}
+                                            className="text-[#FF8000] focus:ring-[#FF8000]"
+                                        />
+                                        <svg className="w-10 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                        </svg>
+                                        <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Tarjeta de crédito o débito</span>
+                                    </label>
+                                )}
                             </div>
+                            {!loadingPaymentFlags && !anyMethodEnabled && (
+                                <div
+                                    className={`rounded-xl p-3 text-xs border ${
+                                        darkMode
+                                            ? 'bg-red-950/40 border-red-700 text-red-200'
+                                            : 'bg-red-50 border-red-200 text-red-700'
+                                    }`}
+                                >
+                                    No hay métodos de pago disponibles en este momento. Contacta a administración.
+                                </div>
+                            )}
 
                             {/* Solo si eligió tarjeta: formulario y lista de tarjetas */}
-                            {metodoPago === 'tarjeta' && (
+                            {tarjetaEnabled && metodoPago === 'tarjeta' && (
                                 <>
                             <p className={`text-sm pt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                 Añade una tarjeta y verifícala. Se guarda en tu cuenta y solo tú puedes verla.
@@ -746,6 +1016,363 @@ export default function CheckoutModal({
                     </button>
                 </div>
             </div>
+
+            {showAddDireccion && (
+                <>
+                    <div className="fixed inset-0 bg-black/70 z-[60]" onClick={() => !savingDireccion && setShowAddDireccion(false)} aria-hidden />
+                    <div
+                        className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[94%] max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border-2 shadow-2xl z-[70] flex flex-col ${
+                            darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                        }`}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="checkout-add-direccion-title"
+                    >
+                        <div className="bg-gradient-to-r from-[#FF8000] to-[#FF9500] px-6 py-3 flex items-center justify-between">
+                            <h3 id="checkout-add-direccion-title" className="text-base font-bold text-white">
+                                Nueva dirección de envío
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddDireccion(false)}
+                                disabled={savingDireccion}
+                                className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors disabled:opacity-50"
+                                aria-label="Cerrar modal de dirección"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateDireccion} className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelClass}>Nombre *</label>
+                                    <input
+                                        type="text"
+                                        value={direccionForm.nombre}
+                                        onChange={(e) => setDireccionForm((f) => ({ ...f, nombre: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {direccionErrors.nombre?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.nombre[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Teléfono *</label>
+                                    <input
+                                        type="text"
+                                        value={direccionForm.telefono}
+                                        onChange={(e) => setDireccionForm((f) => ({ ...f, telefono: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {direccionErrors.telefono?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.telefono[0]}</p>}
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Calle *</label>
+                                <input
+                                    type="text"
+                                    value={direccionForm.calle}
+                                    onChange={(e) => setDireccionForm((f) => ({ ...f, calle: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                {direccionErrors.calle?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.calle[0]}</p>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelClass}>Núm. exterior</label>
+                                    <input
+                                        type="text"
+                                        value={direccionForm.numero_exterior}
+                                        onChange={(e) => setDireccionForm((f) => ({ ...f, numero_exterior: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {direccionErrors.numero_exterior?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.numero_exterior[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Núm. interior (opcional)</label>
+                                    <input
+                                        type="text"
+                                        value={direccionForm.numero_interior}
+                                        onChange={(e) => setDireccionForm((f) => ({ ...f, numero_interior: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Colonia *</label>
+                                <input
+                                    type="text"
+                                    value={direccionForm.colonia}
+                                    onChange={(e) => setDireccionForm((f) => ({ ...f, colonia: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                {direccionErrors.colonia?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.colonia[0]}</p>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelClass}>Ciudad *</label>
+                                    <input
+                                        type="text"
+                                        value={direccionForm.ciudad}
+                                        onChange={(e) => setDireccionForm((f) => ({ ...f, ciudad: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {direccionErrors.ciudad?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.ciudad[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Estado *</label>
+                                    <input
+                                        type="text"
+                                        value={direccionForm.estado}
+                                        onChange={(e) => setDireccionForm((f) => ({ ...f, estado: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {direccionErrors.estado?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.estado[0]}</p>}
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Código postal * (5 dígitos)</label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={5}
+                                    value={direccionForm.codigo_postal}
+                                    onChange={(e) => setDireccionForm((f) => ({ ...f, codigo_postal: e.target.value.replace(/\D/g, '').slice(0, 5) }))}
+                                    className={inputClass}
+                                />
+                                {direccionErrors.codigo_postal?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.codigo_postal[0]}</p>}
+                            </div>
+                            <div>
+                                <label className={labelClass}>Referencias (opcional)</label>
+                                <input
+                                    type="text"
+                                    value={direccionForm.referencias}
+                                    onChange={(e) => setDireccionForm((f) => ({ ...f, referencias: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                {direccionErrors.referencias?.[0] && <p className="mt-1 text-xs text-red-500">{direccionErrors.referencias[0]}</p>}
+                            </div>
+                            <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <input
+                                    type="checkbox"
+                                    checked={direccionForm.es_principal}
+                                    onChange={(e) => setDireccionForm((f) => ({ ...f, es_principal: e.target.checked }))}
+                                    className="rounded border-gray-300 text-[#FF8000] focus:ring-[#FF8000]"
+                                />
+                                Guardar como dirección principal
+                            </label>
+                            {direccionErrors.general?.[0] && <p className="text-sm text-red-500">{direccionErrors.general[0]}</p>}
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddDireccion(false)}
+                                    disabled={savingDireccion}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                                >
+                                    <span className="relative block w-4 h-4 shrink-0">
+                                        <Image src="/Imagenes/icon_cerrar_sesion.webp" alt="" fill className="object-contain brightness-0 invert" />
+                                    </span>
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingDireccion}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-[#FF8000] hover:bg-[#e67300] text-white disabled:opacity-50"
+                                >
+                                    <span className="relative block w-4 h-4 shrink-0">
+                                        <Image src="/Imagenes/icon_guardar.png" alt="" fill className="object-contain brightness-0 invert" />
+                                    </span>
+                                    {savingDireccion ? 'Guardando…' : 'Guardar dirección'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </>
+            )}
+
+            {showAddFacturacion && (
+                <>
+                    <div className="fixed inset-0 bg-black/70 z-[60]" onClick={() => !savingFacturacion && setShowAddFacturacion(false)} aria-hidden />
+                    <div
+                        className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[94%] max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border-2 shadow-2xl z-[70] flex flex-col ${
+                            darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                        }`}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="checkout-add-facturacion-title"
+                    >
+                        <div className="bg-gradient-to-r from-[#FF8000] to-[#FF9500] px-6 py-3 flex items-center justify-between">
+                            <h3 id="checkout-add-facturacion-title" className="text-base font-bold text-white">
+                                Nuevos datos de facturación
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddFacturacion(false)}
+                                disabled={savingFacturacion}
+                                className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors disabled:opacity-50"
+                                aria-label="Cerrar modal de facturación"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateFacturacion} className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div>
+                                <label className={labelClass}>Razón social *</label>
+                                <input
+                                    type="text"
+                                    value={facturacionForm.razon_social}
+                                    onChange={(e) => setFacturacionForm((f) => ({ ...f, razon_social: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                {facturacionErrors.razon_social?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.razon_social[0]}</p>}
+                            </div>
+                            <div>
+                                <label className={labelClass}>RFC * (12-13 caracteres)</label>
+                                <input
+                                    type="text"
+                                    maxLength={14}
+                                    value={facturacionForm.rfc}
+                                    onChange={(e) => setFacturacionForm((f) => ({ ...f, rfc: e.target.value.toUpperCase().replace(/\s/g, '') }))}
+                                    className={inputClass}
+                                />
+                                {facturacionErrors.rfc?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.rfc[0]}</p>}
+                            </div>
+                            <div>
+                                <label className={labelClass}>Calle *</label>
+                                <input
+                                    type="text"
+                                    value={facturacionForm.calle}
+                                    onChange={(e) => setFacturacionForm((f) => ({ ...f, calle: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                {facturacionErrors.calle?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.calle[0]}</p>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelClass}>Núm. exterior</label>
+                                    <input
+                                        type="text"
+                                        value={facturacionForm.numero_exterior}
+                                        onChange={(e) => setFacturacionForm((f) => ({ ...f, numero_exterior: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {facturacionErrors.numero_exterior?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.numero_exterior[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Núm. interior (opcional)</label>
+                                    <input
+                                        type="text"
+                                        value={facturacionForm.numero_interior}
+                                        onChange={(e) => setFacturacionForm((f) => ({ ...f, numero_interior: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Colonia *</label>
+                                <input
+                                    type="text"
+                                    value={facturacionForm.colonia}
+                                    onChange={(e) => setFacturacionForm((f) => ({ ...f, colonia: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                {facturacionErrors.colonia?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.colonia[0]}</p>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelClass}>Ciudad *</label>
+                                    <input
+                                        type="text"
+                                        value={facturacionForm.ciudad}
+                                        onChange={(e) => setFacturacionForm((f) => ({ ...f, ciudad: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {facturacionErrors.ciudad?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.ciudad[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Estado *</label>
+                                    <input
+                                        type="text"
+                                        value={facturacionForm.estado}
+                                        onChange={(e) => setFacturacionForm((f) => ({ ...f, estado: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {facturacionErrors.estado?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.estado[0]}</p>}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelClass}>Código postal * (5 dígitos)</label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={5}
+                                        value={facturacionForm.codigo_postal}
+                                        onChange={(e) => setFacturacionForm((f) => ({ ...f, codigo_postal: e.target.value.replace(/\D/g, '').slice(0, 5) }))}
+                                        className={inputClass}
+                                    />
+                                    {facturacionErrors.codigo_postal?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.codigo_postal[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Email facturación (opcional)</label>
+                                    <input
+                                        type="email"
+                                        value={facturacionForm.email_facturacion}
+                                        onChange={(e) => setFacturacionForm((f) => ({ ...f, email_facturacion: e.target.value }))}
+                                        className={inputClass}
+                                    />
+                                    {facturacionErrors.email_facturacion?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.email_facturacion[0]}</p>}
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Teléfono (opcional)</label>
+                                <input
+                                    type="text"
+                                    value={facturacionForm.telefono}
+                                    onChange={(e) => setFacturacionForm((f) => ({ ...f, telefono: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                {facturacionErrors.telefono?.[0] && <p className="mt-1 text-xs text-red-500">{facturacionErrors.telefono[0]}</p>}
+                            </div>
+                            <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <input
+                                    type="checkbox"
+                                    checked={facturacionForm.es_principal}
+                                    onChange={(e) => setFacturacionForm((f) => ({ ...f, es_principal: e.target.checked }))}
+                                    className="rounded border-gray-300 text-[#FF8000] focus:ring-[#FF8000]"
+                                />
+                                Guardar como datos principales
+                            </label>
+                            {facturacionErrors.general?.[0] && <p className="text-sm text-red-500">{facturacionErrors.general[0]}</p>}
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddFacturacion(false)}
+                                    disabled={savingFacturacion}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                                >
+                                    <span className="relative block w-4 h-4 shrink-0">
+                                        <Image src="/Imagenes/icon_cerrar_sesion.webp" alt="" fill className="object-contain brightness-0 invert" />
+                                    </span>
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingFacturacion}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-[#FF8000] hover:bg-[#e67300] text-white disabled:opacity-50"
+                                >
+                                    <span className="relative block w-4 h-4 shrink-0">
+                                        <Image src="/Imagenes/icon_guardar.png" alt="" fill className="object-contain brightness-0 invert" />
+                                    </span>
+                                    {savingFacturacion ? 'Guardando…' : 'Guardar datos'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </>
+            )}
         </>
     )
 }
