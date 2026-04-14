@@ -619,10 +619,6 @@ export default function CheckoutModal({
                     {/* Método de pago: PayPal, Mercado Pago o Tarjeta */}
                     {step === 'tarjetas' && (
                         <div className="space-y-4">
-                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                Elige cómo quieres pagar: PayPal, Mercado Pago o tarjeta de crédito/débito.
-                            </p>
-
                             {(() => {
                                 const dSel = direcciones.find((d) => d.id === selectedDireccionId)
                                 const fSel = usarFacturacion
