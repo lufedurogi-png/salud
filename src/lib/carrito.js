@@ -106,6 +106,26 @@ export async function checkoutCart(body) {
     throw new Error(data?.message || 'Error al crear el pedido')
 }
 
+/** Cotiza envío del carrito en servidor (misma base que checkout / pasarelas). Requiere sesión y carrito sincronizado. */
+export async function cotizarEnvio({ direccion_envio_id }) {
+    const id = Number(direccion_envio_id)
+    if (!Number.isInteger(id) || id < 1) {
+        throw new Error('Dirección de envío no válida.')
+    }
+    try {
+        const { data } = await axios.post('/carrito/cotizar-envio', { direccion_envio_id: id })
+        if (data?.success && data?.data) {
+            return data.data
+        }
+        throw new Error(data?.message || 'No se pudo cotizar el envío')
+    } catch (err) {
+        if (err?.response || err?.isAxiosError) {
+            throw new Error(apiErrorMessage(err, 'No se pudo cotizar el envío'))
+        }
+        throw err
+    }
+}
+
 function apiErrorMessage(err, fallback) {
     const d = err?.response?.data
     if (typeof d?.message === 'string') return d.message

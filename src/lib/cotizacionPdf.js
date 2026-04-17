@@ -48,29 +48,31 @@ export async function downloadCotizacionPdf(items, total, nombreArchivo) {
         doc.addImage(bgData, 'PNG', 0, 0, pageW, pageH)
     }
 
-    const green = [5, 150, 105]
-    const greenLight = [236, 253, 245]
-    const greenDark = [4, 120, 87]
+    // Paleta alineada con PDF de pedidos (DomPDF pedido.blade.php): naranjas CVA / marca
+    const orange = [234, 88, 12]
+    const orangeLight = [255, 247, 237]
+    const orangeDark = [194, 65, 12]
+    const orangeBorderSoft = [255, 237, 213]
 
     // Evita tapar el logo del membrete superior
-    doc.setTextColor(...greenDark)
+    doc.setTextColor(...orangeDark)
     doc.setFontSize(11)
     doc.setFont(undefined, 'bold')
     doc.text('COTIZACIÓN', margin, 34)
     doc.setFontSize(14)
     doc.text(`Fecha: ${fechaStr}`, pageW - margin, 34, { align: 'right' })
 
-    doc.setTextColor(...greenDark)
+    doc.setTextColor(...orangeDark)
     doc.setFontSize(11)
     doc.setFont(undefined, 'normal')
 
-    doc.setDrawColor(...green)
+    doc.setDrawColor(...orange)
     doc.setLineWidth(0.8)
     doc.line(margin, 50, pageW - margin, 50)
 
-    doc.setFillColor(...greenLight)
+    doc.setFillColor(...orangeLight)
     doc.rect(margin, 54, pageW - margin * 2, 8, 'F')
-    doc.setTextColor(...greenDark)
+    doc.setTextColor(...orangeDark)
     doc.setFontSize(10)
     doc.setFont(undefined, 'bold')
     doc.text('DETALLE DE LA COTIZACIÓN', margin + 4, 59.5)
@@ -89,8 +91,8 @@ export async function downloadCotizacionPdf(items, total, nombreArchivo) {
         body: tableData,
         theme: 'plain',
         headStyles: {
-            fillColor: greenLight,
-            textColor: greenDark,
+            fillColor: orangeLight,
+            textColor: orangeDark,
             fontStyle: 'bold',
             fontSize: 9
         },
@@ -101,19 +103,20 @@ export async function downloadCotizacionPdf(items, total, nombreArchivo) {
             3: { halign: 'right', cellWidth: 28 }
         },
         margin: { left: margin, right: margin },
-        tableLineColor: [167, 243, 208],
+        tableLineColor: orangeBorderSoft,
         tableLineWidth: 0.3
     })
 
     const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 14 : 90
-    doc.setDrawColor(...green)
+    doc.setDrawColor(...orange)
     doc.setLineWidth(0.6)
     doc.line(margin, finalY, pageW - margin, finalY)
     doc.setFontSize(11)
     doc.setFont(undefined, 'bold')
-    doc.setTextColor(...greenDark)
+    doc.setTextColor(...orangeDark)
     doc.text('Total', margin, finalY + 5)
     doc.setFontSize(14)
+    doc.setTextColor(...orange)
     doc.text(`$ ${totalStr}`, pageW - margin, finalY + 5, { align: 'right' })
     const totalNum = typeof total === 'number' ? total : Number(total)
     if (Number.isFinite(totalNum)) {
@@ -125,12 +128,12 @@ export async function downloadCotizacionPdf(items, total, nombreArchivo) {
 
     // Pie justo después del total
     const footerY = finalY + 13
-    doc.setDrawColor(...green)
+    doc.setDrawColor(...orange)
     doc.setLineWidth(0.4)
     doc.line(margin, footerY - 6, pageW - margin, footerY - 6)
     doc.setFontSize(9)
     doc.setFont(undefined, 'normal')
-    doc.setTextColor(...greenDark)
+    doc.setTextColor(156, 163, 175)
     doc.text(`Cotización · Todo para la oficina · ${fechaStr}`, pageW / 2, footerY, { align: 'center' })
 
     doc.save(file)

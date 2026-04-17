@@ -54,6 +54,7 @@ export default function CotizacionesClient() {
     const [pagarModal, setPagarModal] = useState(false)
     const [checkoutLoading, setCheckoutLoading] = useState(false)
     const [checkoutError, setCheckoutError] = useState(null)
+    const [preparandoPagoModal, setPreparandoPagoModal] = useState(false)
     const [emailModalOpen, setEmailModalOpen] = useState(false)
     const [emailInvitado, setEmailInvitado] = useState('')
     const [privacyAcceptedInvitado, setPrivacyAcceptedInvitado] = useState(false)
@@ -169,18 +170,31 @@ export default function CotizacionesClient() {
         }
     }
 
-    const handlePagar = () => {
+    const lineasParaSync = itemsConProducto
+        .filter((i) => !i.sinStock && (i.qtyEfectiva || 0) >= 1)
+        .map((i) => ({ clave: i.clave, cantidad: i.qtyEfectiva }))
+
+    const handlePagar = async () => {
         if (!isLogged) {
             setLoginModalOpen(true)
             return
         }
         if (isEmpty) return
-        setPagarModal(true)
+        if (lineasParaSync.length === 0) {
+            setCheckoutError('No hay productos con stock para pagar.')
+            return
+        }
+        setCheckoutError(null)
+        setPreparandoPagoModal(true)
+        try {
+            await syncCartItems(lineasParaSync)
+            setPagarModal(true)
+        } catch (err) {
+            setCheckoutError(err?.message || err?.response?.data?.message || 'No se pudo preparar el carrito para el pago.')
+        } finally {
+            setPreparandoPagoModal(false)
+        }
     }
-
-    const lineasParaSync = itemsConProducto
-        .filter((i) => !i.sinStock && (i.qtyEfectiva || 0) >= 1)
-        .map((i) => ({ clave: i.clave, cantidad: i.qtyEfectiva }))
 
     const handleConfirmarPedido = async (payload) => {
         if (!payload?.metodoPago) {
@@ -637,6 +651,9 @@ export default function CotizacionesClient() {
                                 {guardarError && (
                                     <p className="text-sm text-red-500">{guardarError}</p>
                                 )}
+                                {checkoutError && !pagarModal && (
+                                    <p className="text-sm text-red-500 max-w-md text-right">{checkoutError}</p>
+                                )}
                                 <div className="flex gap-3">
                                 <button
                                     type="button"
@@ -651,9 +668,10 @@ export default function CotizacionesClient() {
                                 <button
                                     type="button"
                                     onClick={handlePagar}
-                                    className="px-6 py-3 rounded-lg font-semibold bg-[#FF8000] hover:bg-[#e67300] text-white transition-colors"
+                                    disabled={preparandoPagoModal}
+                                    className="px-6 py-3 rounded-lg font-semibold bg-[#FF8000] hover:bg-[#e67300] text-white transition-colors disabled:opacity-60"
                                 >
-                                    Pagar
+                                    {preparandoPagoModal ? 'Preparando…' : 'Pagar'}
                                 </button>
                                 </div>
                             </div>

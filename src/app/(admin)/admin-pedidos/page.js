@@ -46,6 +46,19 @@ function estatusLabel(raw) {
     return ESTATUS_PEDIDO_DEF.find((o) => o.value === k)?.label ?? raw ?? '—'
 }
 
+function JsonPre({ value, darkMode }) {
+    const s = value === undefined || value === null ? '' : JSON.stringify(value, null, 2)
+    return (
+        <pre
+            className={`text-xs font-mono overflow-auto max-h-64 p-3 rounded-lg border whitespace-pre-wrap ${
+                darkMode ? 'bg-gray-900/80 border-gray-600 text-gray-200' : 'bg-white border-gray-200 text-gray-800'
+            }`}
+        >
+            {s === '' ? '—' : s}
+        </pre>
+    )
+}
+
 function CalendarGlyph({ className = 'h-3.5 w-3.5 shrink-0' }) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -102,6 +115,10 @@ export default function AdminPedidosPage() {
     const [downloadingPdfId, setDownloadingPdfId] = useState(null)
     const [detallePedidoId, setDetallePedidoId] = useState(null)
     const [detallePedido, setDetallePedido] = useState(null)
+    const [detalleEnvioContext, setDetalleEnvioContext] = useState(null)
+    const [envioListaModalPedidoId, setEnvioListaModalPedidoId] = useState(null)
+    const [envioListaModalData, setEnvioListaModalData] = useState(null)
+    const [envioListaModalLoading, setEnvioListaModalLoading] = useState(false)
     const [updatingEstatusId, setUpdatingEstatusId] = useState(null)
     const [feedback, setFeedback] = useState(null)
 
@@ -192,6 +209,7 @@ export default function AdminPedidosPage() {
     useEffect(() => {
         if (detallePedidoId == null) {
             setDetallePedido(null)
+            setDetalleEnvioContext(null)
             return
         }
         axios
@@ -202,6 +220,28 @@ export default function AdminPedidosPage() {
             })
             .catch(() => setDetallePedido(null))
     }, [detallePedidoId])
+
+    const cerrarEnvioListaModal = useCallback(() => {
+        setEnvioListaModalPedidoId(null)
+        setEnvioListaModalData(null)
+        setEnvioListaModalLoading(false)
+    }, [])
+
+    const abrirEnvioListaModal = useCallback(async (pedidoId) => {
+        setEnvioListaModalPedidoId(pedidoId)
+        setEnvioListaModalLoading(true)
+        setEnvioListaModalData(null)
+        try {
+            const { data } = await axios.get(`/admin/pedidos/${pedidoId}`)
+            if (data?.success && data?.data) {
+                setEnvioListaModalData(data.data)
+            }
+        } catch {
+            setEnvioListaModalData(null)
+        } finally {
+            setEnvioListaModalLoading(false)
+        }
+    }, [])
 
     const handleDescargarPdf = async (id, folio) => {
         setDownloadingPdfId(id)
@@ -328,7 +368,7 @@ export default function AdminPedidosPage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className={`w-full text-sm border-collapse min-w-[1020px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                    <table className={`w-full text-sm border-collapse min-w-[1120px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                         <thead>
                             <tr className={darkMode ? `border-b-2 ${tableBorderClass} bg-gray-700/55` : `border-b-2 ${tableBorderClass} bg-gray-100`}>
                                 <th className={`align-top px-2 py-3.5 border-r ${tableBorderClass} w-[1%] min-w-[200px] max-w-[280px]`}>
@@ -424,6 +464,9 @@ export default function AdminPedidosPage() {
                                         ))}
                                     </select>
                                 </th>
+                                <th className={`align-top px-3 py-3.5 border-r ${tableBorderClass} min-w-[120px]`}>
+                                    <div className={headTitleClass}>Envío</div>
+                                </th>
                                 <th className={`align-top px-3 py-3.5`}>
                                     <div className={headTitleClass}>Acciones</div>
                                 </th>
@@ -432,7 +475,7 @@ export default function AdminPedidosPage() {
                         <tbody>
                             {loadingPedidos ? (
                                 <tr>
-                                    <td colSpan={8} className={`px-4 py-12 text-center ${cellMutedClass}`}>
+                                    <td colSpan={9} className={`px-4 py-12 text-center ${cellMutedClass}`}>
                                         <div className="flex flex-col items-center gap-3">
                                             <svg className="animate-spin h-8 w-8 text-emerald-500" fill="none" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -444,7 +487,7 @@ export default function AdminPedidosPage() {
                                 </tr>
                             ) : pedidos.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className={`px-4 py-12 text-center ${cellMutedClass}`}>
+                                    <td colSpan={9} className={`px-4 py-12 text-center ${cellMutedClass}`}>
                                         No hay pedidos con los filtros aplicados.
                                     </td>
                                 </tr>
@@ -488,6 +531,26 @@ export default function AdminPedidosPage() {
                                             {updatingEstatusId === pedido.id && (
                                                 <span className={`ml-2 text-xs ${cellMutedClass} align-middle`}>Guardando…</span>
                                             )}
+                                        </td>
+                                        <td className={`py-3 px-3 border-r ${tableBorderClass} align-middle text-center`}>
+                                            <div className="flex flex-col items-center gap-1">
+                                                {pedido.envio != null && Number(pedido.envio.costo_envio) > 0 ? (
+                                                    <span className="text-xs font-semibold tabular-nums text-emerald-400">
+                                                        $ {Number(pedido.envio.costo_envio).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                ) : pedido.envio != null ? (
+                                                    <span className={`text-xs ${cellMutedClass}`}>$ 0.00</span>
+                                                ) : (
+                                                    <span className={`text-xs ${cellMutedClass}`}>—</span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => abrirEnvioListaModal(pedido.id)}
+                                                    className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded-md bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 transition-colors"
+                                                >
+                                                    Ver envío
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-2">
@@ -585,6 +648,227 @@ export default function AdminPedidosPage() {
                     })()}
             </div>
 
+            {envioListaModalPedidoId != null && (
+                <>
+                    <div className="fixed inset-0 z-[62] bg-black/60 backdrop-blur-sm" onClick={cerrarEnvioListaModal} aria-hidden />
+                    <div
+                        className={`fixed left-1/2 top-1/2 z-[63] w-[94%] max-w-2xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl shadow-2xl flex flex-col ${
+                            darkMode ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-200'
+                        }`}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="admin-envio-pedido-lista-title"
+                    >
+                        <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-emerald-600/20 border-b border-emerald-500/30">
+                            <h3 id="admin-envio-pedido-lista-title" className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                Envío del pedido {envioListaModalData?.folio ?? envioListaModalPedidoId ?? '…'}
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={cerrarEnvioListaModal}
+                                className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+                                aria-label="Cerrar"
+                            >
+                                <span className="text-xl leading-none">×</span>
+                            </button>
+                        </div>
+                        <div className={`p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                            {envioListaModalLoading && (
+                                <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Cargando datos de envío…</p>
+                            )}
+                            {!envioListaModalLoading && envioListaModalData && (
+                                <>
+                                    {envioListaModalData.direccion_envio && (
+                                        <div className={`rounded-xl p-3 border ${darkMode ? 'border-gray-600 bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
+                                            <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Destino (domicilio de envío)</p>
+                                            <p className="font-medium">{envioListaModalData.direccion_envio.nombre}</p>
+                                            <p className="mt-1 text-xs leading-relaxed">
+                                                {envioListaModalData.direccion_envio.calle}{' '}
+                                                {envioListaModalData.direccion_envio.numero_exterior || ''}
+                                                {envioListaModalData.direccion_envio.colonia ? `, ${envioListaModalData.direccion_envio.colonia}` : ''}
+                                                {envioListaModalData.direccion_envio.ciudad ? ` · ${envioListaModalData.direccion_envio.ciudad}` : ''}
+                                                {envioListaModalData.direccion_envio.estado ? `, ${envioListaModalData.direccion_envio.estado}` : ''}
+                                                {envioListaModalData.direccion_envio.codigo_postal ? (
+                                                    <span className="font-semibold text-emerald-500"> · CP {envioListaModalData.direccion_envio.codigo_postal}</span>
+                                                ) : null}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {envioListaModalData.envio ? (
+                                        <div className={`rounded-xl p-3 border ${darkMode ? 'border-gray-600 bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
+                                            <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Cálculo y totales</p>
+                                            <p>
+                                                Subtotal productos:{' '}
+                                                <span className="font-medium tabular-nums">
+                                                    $ {Number(envioListaModalData.envio.subtotal_productos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                </span>
+                                            </p>
+                                            <p>
+                                                Costo envío:{' '}
+                                                <span className="font-medium tabular-nums text-emerald-400">
+                                                    $ {Number(envioListaModalData.envio.costo_envio).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                </span>
+                                            </p>
+                                            {(envioListaModalData.envio.fecha_entrega_desde || envioListaModalData.envio.fecha_entrega_hasta) && (
+                                                <p className="text-xs mt-2">
+                                                    Entrega aprox.: {envioListaModalData.envio.fecha_entrega_desde ?? '—'} — {envioListaModalData.envio.fecha_entrega_hasta ?? '—'}
+                                                    {envioListaModalData.envio.fecha_entrega_centro ? ` · centro ${envioListaModalData.envio.fecha_entrega_centro}` : ''}
+                                                </p>
+                                            )}
+                                            {envioListaModalData.envio.detalle_cotizacion != null && (
+                                                <div className="mt-2">
+                                                    <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Detalle (API / cálculo)</p>
+                                                    <JsonPre value={envioListaModalData.envio.detalle_cotizacion} darkMode={darkMode} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className={darkMode ? 'text-amber-300/90' : 'text-amber-800'}>
+                                            Este pedido no tiene registro de envío en base de datos (pedidos anteriores o sin cotización al pagar).
+                                        </p>
+                                    )}
+                                    {Array.isArray(envioListaModalData.items) && envioListaModalData.items.length > 0 && (
+                                        <div>
+                                            <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Por producto (almacén / prorrateo)</p>
+                                            <div className={`rounded-xl border overflow-hidden ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                                                <table className="w-full text-xs">
+                                                    <thead className={darkMode ? 'bg-gray-700/80' : 'bg-gray-100'}>
+                                                        <tr>
+                                                            <th className={`px-2 py-2 text-left ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Producto</th>
+                                                            <th className={`px-2 py-2 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Envío línea</th>
+                                                            <th className={`px-2 py-2 text-left ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Origen</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className={darkMode ? 'divide-y divide-gray-600' : 'divide-y divide-gray-200'}>
+                                                        {envioListaModalData.items.map((it, idx) => (
+                                                            <tr key={it.id ?? idx} className={darkMode ? 'bg-gray-800/40' : 'bg-white'}>
+                                                                <td className={`px-2 py-2 max-w-[200px] ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                                                    <span className="line-clamp-2">{it.nombre_producto}</span>
+                                                                </td>
+                                                                <td className="px-2 py-2 text-right tabular-nums text-emerald-400">
+                                                                    {it.envio_linea
+                                                                        ? `$ ${Number(it.envio_linea.costo_envio_prorrateado).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                                                                        : '—'}
+                                                                </td>
+                                                                <td className={`px-2 py-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                    {it.envio_linea?.almacen_origen_label || '—'}
+                                                                    {it.envio_linea?.almacen_cp_origen ? ` · CP ${it.envio_linea.almacen_cp_origen}` : ''}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            {!envioListaModalLoading && !envioListaModalData && (
+                                <p className="text-red-400 text-sm">No se pudo cargar el detalle del pedido.</p>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {detalleEnvioContext && (
+                <>
+                    <div
+                        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+                        onClick={() => setDetalleEnvioContext(null)}
+                        aria-hidden
+                    />
+                    <div
+                        className={`fixed left-1/2 top-1/2 z-[61] w-[94%] max-w-lg max-h-[85vh] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl shadow-2xl flex flex-col ${
+                            darkMode ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-200'
+                        }`}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="admin-envio-linea-title"
+                    >
+                        <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-emerald-600/20 border-b border-emerald-500/30">
+                            <h3 id="admin-envio-linea-title" className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                Envío · {detalleEnvioContext.item?.nombre_producto ?? 'Línea'}
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setDetalleEnvioContext(null)}
+                                className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+                                aria-label="Cerrar"
+                            >
+                                <span className="text-xl leading-none">×</span>
+                            </button>
+                        </div>
+                        <div className={`p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                            {detalleEnvioContext.envioPedido && (
+                                <div className={`rounded-xl p-3 border ${darkMode ? 'border-gray-600 bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
+                                    <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Pedido (envío total)</p>
+                                    <p>
+                                        Subtotal productos:{' '}
+                                        <span className="font-medium tabular-nums">
+                                            $ {Number(detalleEnvioContext.envioPedido.subtotal_productos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                        </span>
+                                    </p>
+                                    <p>
+                                        Costo envío:{' '}
+                                        <span className="font-medium tabular-nums">
+                                            $ {Number(detalleEnvioContext.envioPedido.costo_envio).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                        </span>
+                                        {detalleEnvioContext.envioPedido.moneda ? ` ${detalleEnvioContext.envioPedido.moneda}` : ''}
+                                    </p>
+                                    {(detalleEnvioContext.envioPedido.fecha_entrega_centro ||
+                                        detalleEnvioContext.envioPedido.fecha_entrega_desde ||
+                                        detalleEnvioContext.envioPedido.fecha_entrega_hasta) && (
+                                        <p className="text-xs mt-2">
+                                            {detalleEnvioContext.envioPedido.fecha_entrega_centro && (
+                                                <>Centro estimado: {detalleEnvioContext.envioPedido.fecha_entrega_centro}. </>
+                                            )}
+                                            {(detalleEnvioContext.envioPedido.fecha_entrega_desde || detalleEnvioContext.envioPedido.fecha_entrega_hasta) && (
+                                                <>
+                                                    Rango: {detalleEnvioContext.envioPedido.fecha_entrega_desde ?? '—'} —{' '}
+                                                    {detalleEnvioContext.envioPedido.fecha_entrega_hasta ?? '—'}
+                                                </>
+                                            )}
+                                        </p>
+                                    )}
+                                    {detalleEnvioContext.envioPedido.detalle_cotizacion != null && (
+                                        <div className="mt-2">
+                                            <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Detalle cotización (API / cálculo)</p>
+                                            <JsonPre value={detalleEnvioContext.envioPedido.detalle_cotizacion} darkMode={darkMode} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {detalleEnvioContext.item?.envio_linea ? (
+                                <div className={`rounded-xl p-3 border ${darkMode ? 'border-gray-600 bg-gray-900/40' : 'border-gray-200 bg-gray-50'}`}>
+                                    <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Esta línea (desde almacén)</p>
+                                    <p>
+                                        Costo prorrateado:{' '}
+                                        <span className="font-medium tabular-nums text-emerald-500">
+                                            $ {Number(detalleEnvioContext.item.envio_linea.costo_envio_prorrateado).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                        </span>
+                                    </p>
+                                    {detalleEnvioContext.item.envio_linea.almacen_origen_label && (
+                                        <p className="mt-1">Almacén / origen: {detalleEnvioContext.item.envio_linea.almacen_origen_label}</p>
+                                    )}
+                                    {detalleEnvioContext.item.envio_linea.almacen_cp_origen != null && detalleEnvioContext.item.envio_linea.almacen_cp_origen !== '' && (
+                                        <p className="mt-1 text-xs">CP origen: {detalleEnvioContext.item.envio_linea.almacen_cp_origen}</p>
+                                    )}
+                                    {detalleEnvioContext.item.envio_linea.meta_linea != null && (
+                                        <div className="mt-2">
+                                            <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Meta línea</p>
+                                            <JsonPre value={detalleEnvioContext.item.envio_linea.meta_linea} darkMode={darkMode} />
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>No hay datos de envío por línea para este producto.</p>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+
             {detallePedidoId != null && (
                 <>
                     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setDetallePedidoId(null)} aria-hidden />
@@ -663,14 +947,28 @@ export default function AdminPedidosPage() {
                                                     <tr>
                                                         <th className={`px-3 py-2.5 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Producto</th>
                                                         <th className={`px-3 py-2.5 text-center w-16 text-xs font-semibold uppercase ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Cant.</th>
+                                                        <th className={`px-3 py-2.5 text-center w-28 text-xs font-semibold uppercase ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Envío</th>
                                                         <th className={`px-3 py-2.5 text-right w-24 text-xs font-semibold uppercase ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Subtotal</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className={darkMode ? 'divide-y divide-gray-600' : 'divide-y divide-gray-200'}>
                                                     {(detallePedido.items || []).map((it, idx) => (
-                                                        <tr key={idx} className={darkMode ? 'bg-gray-800/50' : 'bg-white'}>
+                                                        <tr key={it.id ?? idx} className={darkMode ? 'bg-gray-800/50' : 'bg-white'}>
                                                             <td className={`px-3 py-2.5 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{it.nombre_producto}</td>
                                                             <td className={`px-3 py-2.5 text-center ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{it.cantidad}</td>
+                                                            <td className={`px-3 py-2.5 text-center ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                                {it.envio_linea ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setDetalleEnvioContext({ item: it, envioPedido: detallePedido.envio })}
+                                                                        className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline"
+                                                                    >
+                                                                        Ver envío
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>—</span>
+                                                                )}
+                                                            </td>
                                                             <td className="px-3 py-2.5 text-right font-medium text-emerald-500">
                                                                 $ {Number(it.subtotal).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                                             </td>

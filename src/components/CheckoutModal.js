@@ -3,11 +3,40 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import axios from '@/lib/axios'
+import { cotizarEnvio } from '@/lib/carrito'
+import { formatPrecio } from '@/lib/productos'
 
 const DEFAULT_PAYMENT_FLAGS = {
     paypal: true,
     mercadopago: true,
     tarjeta: true,
+}
+
+/** Texto de ventana de entrega a partir de fechas YYYY-MM-DD de la API. */
+function textoEntregaEstimada(q) {
+    if (!q) return ''
+    const fmt = (s) => {
+        if (!s) return null
+        try {
+            return new Date(`${s}T12:00:00`).toLocaleDateString('es-MX', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+            })
+        } catch {
+            return s
+        }
+    }
+    const fc = fmt(q.fecha_entrega_centro)
+    const fd = fmt(q.fecha_entrega_desde)
+    const fh = fmt(q.fecha_entrega_hasta)
+    if (fc && fd && fh && fd !== fh) {
+        return `Entrega estimada alrededor del ${fc}. Por logística del transportista puede llegar entre el ${fd} y el ${fh}.`
+    }
+    if (fc) {
+        return `Entrega estimada alrededor del ${fc}. La fecha puede variar unos días según la paquetería.`
+    }
+    return ''
 }
 
 function maskNumber(num) {
@@ -59,6 +88,9 @@ export default function CheckoutModal({
     const [cvvPago, setCvvPago] = useState('') // CVV al pagar con tarjeta guardada (no se guarda)
     const [paymentFlags, setPaymentFlags] = useState(DEFAULT_PAYMENT_FLAGS)
     const [loadingPaymentFlags, setLoadingPaymentFlags] = useState(false)
+    const [envioCotizacion, setEnvioCotizacion] = useState(null)
+    const [loadingEnvio, setLoadingEnvio] = useState(false)
+    const [errorEnvio, setErrorEnvio] = useState(null)
     const [direccionForm, setDireccionForm] = useState({
         nombre: '',
         telefono: '',
@@ -154,6 +186,10 @@ export default function CheckoutModal({
 
     useEffect(() => {
         if (open) {
+            setStep('contacto')
+            setEnvioCotizacion(null)
+            setErrorEnvio(null)
+            setLoadingEnvio(false)
             fetchDirecciones()
             fetchDatosFacturacion()
             fetchCards()
@@ -166,6 +202,32 @@ export default function CheckoutModal({
             setFacturacionErrors({})
         }
     }, [open, fetchDirecciones, fetchDatosFacturacion, fetchCards, fetchPaymentFlags])
+
+    useEffect(() => {
+        if (!open || step !== 'tarjetas') return
+        if (selectedDireccionId == null) return
+        let cancelled = false
+        setLoadingEnvio(true)
+        setErrorEnvio(null)
+        setEnvioCotizacion(null)
+        cotizarEnvio({ direccion_envio_id: selectedDireccionId })
+            .then((data) => {
+                if (!cancelled) {
+                    setEnvioCotizacion(data)
+                    setLoadingEnvio(false)
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setEnvioCotizacion(null)
+                    setErrorEnvio(err?.message || 'No se pudo cotizar el envío')
+                    setLoadingEnvio(false)
+                }
+            })
+        return () => {
+            cancelled = true
+        }
+    }, [open, step, selectedDireccionId])
 
     useEffect(() => {
         if (!usarFacturacion) return
@@ -402,11 +464,15 @@ export default function CheckoutModal({
         (mercadoPagoEnabled && metodoPago === 'mercadopago') ||
         tieneTarjetaValida
     const canConfirm =
+        step === 'tarjetas' &&
         selectedDireccionId != null &&
         (!usarFacturacion || selectedFacturacionId != null) &&
         metodoPagoValido &&
         anyMethodEnabled &&
-        !loadingPaymentFlags
+        !loadingPaymentFlags &&
+        !loadingEnvio &&
+        envioCotizacion != null &&
+        !errorEnvio
 
     if (!open) return null
 
@@ -619,6 +685,59 @@ export default function CheckoutModal({
                     {/* Método de pago: PayPal, Mercado Pago o Tarjeta */}
                     {step === 'tarjetas' && (
                         <div className="space-y-4">
+                            <div
+                                className={`rounded-xl border p-3 text-sm space-y-2 ${
+                                    darkMode ? 'bg-gray-700/40 border-gray-600' : 'bg-gray-50 border-gray-200'
+                                }`}
+                            >
+                                <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Total a cobrar (productos + envío)</p>
+                                {loadingEnvio && (
+                                    <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Cotizando envío según tu carrito y dirección…</p>
+                                )}
+                                {errorEnvio && <p className="text-red-500 text-sm">{errorEnvio}</p>}
+                                {envioCotizacion && !loadingEnvio && !errorEnvio && (
+                                    <>
+                                        <div className={`flex justify-between gap-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                            <span>Subtotal productos</span>
+                                            <span className="font-medium tabular-nums">
+                                                {formatPrecio(Number(envioCotizacion.subtotal_productos) || 0, envioCotizacion.moneda || 'MXN')}
+                                            </span>
+                                        </div>
+                                        <div className={`flex justify-between gap-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                            <span>Envío estimado</span>
+                                            <span className="font-medium tabular-nums">
+                                                {formatPrecio(Number(envioCotizacion.costo_envio) || 0, envioCotizacion.moneda || 'MXN')}
+                                            </span>
+                                        </div>
+                                        <div
+                                            className={`flex justify-between gap-2 pt-2 border-t font-semibold ${
+                                                darkMode ? 'text-[#FF8000] border-gray-600' : 'text-[#FF8000] border-gray-200'
+                                            }`}
+                                        >
+                                            <span>Total</span>
+                                            <span className="tabular-nums">
+                                                {formatPrecio(Number(envioCotizacion.total) || 0, envioCotizacion.moneda || 'MXN')}
+                                            </span>
+                                        </div>
+                                        {textoEntregaEstimada(envioCotizacion) ? (
+                                            <p className={`text-xs leading-relaxed pt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                {textoEntregaEstimada(envioCotizacion)}
+                                            </p>
+                                        ) : null}
+                                        {envioCotizacion.aviso_envio ? (
+                                            <p
+                                                className={`text-xs leading-relaxed mt-2 rounded-lg border px-2.5 py-2 ${
+                                                    darkMode
+                                                        ? 'border-amber-500/40 bg-amber-500/10 text-amber-100'
+                                                        : 'border-amber-300 bg-amber-50 text-amber-900'
+                                                }`}
+                                            >
+                                                {envioCotizacion.aviso_envio}
+                                            </p>
+                                        ) : null}
+                                    </>
+                                )}
+                            </div>
                             {(() => {
                                 const dSel = direcciones.find((d) => d.id === selectedDireccionId)
                                 const fSel = usarFacturacion
@@ -982,6 +1101,11 @@ export default function CheckoutModal({
 
                 {externalError && (
                     <p className="px-6 pb-2 text-sm text-red-500">{externalError}</p>
+                )}
+                {open && step !== 'tarjetas' && (
+                    <p className={`px-6 pb-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        Para ver el total con envío y poder pagar, abre la pestaña «Método de pago».
+                    </p>
                 )}
 
                 {/* Footer: Cancelar (cierra ventana) y Pagar (cuando ya eligió tarjeta/datos) */}

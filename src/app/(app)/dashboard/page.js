@@ -613,6 +613,7 @@ function DashboardInner() {
     const [cotizacionIdParaPagar, setCotizacionIdParaPagar] = useState(null)
     const [checkoutCotizacionLoading, setCheckoutCotizacionLoading] = useState(false)
     const [checkoutCotizacionError, setCheckoutCotizacionError] = useState(null)
+    const [syncingPagoCotizacionId, setSyncingPagoCotizacionId] = useState(null)
     const [dashboardMounted, setDashboardMounted] = useState(false)
     const [metodoPagoCotizacion, setMetodoPagoCotizacion] = useState('Efectivo')
     const [cotizacionPaginaActual, setCotizacionPaginaActual] = useState(1)
@@ -1811,6 +1812,9 @@ function DashboardInner() {
                                     : 'bg-gradient-to-br from-white via-gray-50 to-white border-gray-200 shadow-[#FF8000]/5'
                             }`}>
                                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                                    {checkoutCotizacionError && !pagarCotizacionModalOpen && (
+                                        <p className="basis-full text-sm text-red-500">{checkoutCotizacionError}</p>
+                                    )}
                                     <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                         Mis cotizaciones guardadas
                                     </h2>
@@ -1915,17 +1919,33 @@ function DashboardInner() {
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => {
-                                                                setCotizacionIdParaPagar(cot.id)
+                                                            disabled={syncingPagoCotizacionId === cot.id}
+                                                            onClick={async () => {
                                                                 setCheckoutCotizacionError(null)
-                                                                setPagarCotizacionModalOpen(true)
+                                                                const lineas = lineasCotizacionParaSync(cot.items || [])
+                                                                if (lineas.length === 0) {
+                                                                    setCheckoutCotizacionError('No hay productos con stock para pagar.')
+                                                                    return
+                                                                }
+                                                                setSyncingPagoCotizacionId(cot.id)
+                                                                try {
+                                                                    await syncCartItems(lineas)
+                                                                    setCotizacionIdParaPagar(cot.id)
+                                                                    setPagarCotizacionModalOpen(true)
+                                                                } catch (err) {
+                                                                    setCheckoutCotizacionError(
+                                                                        err?.message || err?.response?.data?.message || 'No se pudo preparar el carrito para el pago.'
+                                                                    )
+                                                                } finally {
+                                                                    setSyncingPagoCotizacionId(null)
+                                                                }
                                                             }}
-                                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium bg-[#FF8000] hover:bg-[#e67300] text-white transition-colors"
+                                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium bg-[#FF8000] hover:bg-[#e67300] text-white transition-colors disabled:opacity-60"
                                                         >
                                                             <div className="relative w-4 h-4 shrink-0">
                                                                 <Image src="/Imagenes/icon_carrito.png" alt="" fill className="object-contain brightness-0 invert" />
                                                             </div>
-                                                            Pagar
+                                                            {syncingPagoCotizacionId === cot.id ? 'Preparando…' : 'Pagar'}
                                                         </button>
                                                         <button
                                                             type="button"
