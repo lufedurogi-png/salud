@@ -1,15 +1,15 @@
 /**
  * Informe de usuarios (.xlsx) en el navegador con ExcelJS.
- * Cabecera superior verde (marca); bloque de sección y datos en gris/blanco con bordes negros.
+ * Cabecera superior dorada (marca); bloque de sección y datos en gris/blanco con bordes negros.
  */
 
 const COL = {
-    emerald900: 'FF064E3B',
-    emerald800: 'FF065F46',
-    emerald700: 'FF047857',
-    emerald600: 'FF059669',
-    emerald100: 'FFD1FAE5',
-    emerald50: 'FFECFDF5',
+    brand900: 'FF6F5B2A',
+    brand800: 'FF8A6F2A',
+    brand700: 'FFA88A2B',
+    brand600: 'FFB7962D',
+    brand100: 'FFF8F5EF',
+    brand50: 'FFFBF8F2',
     white: 'FFFFFFFF',
     black: 'FF000000',
     gray900: 'FF111827',
@@ -72,7 +72,7 @@ function arrayBufferToBase64(buffer) {
 
 async function loadLogoBase64() {
     try {
-        const res = await fetch('/Imagenes/logo_nxtIt.png')
+        const res = await fetch('/Imagenes/Logo_SaludSinBarreras.png')
         if (!res.ok) return null
         const buf = await res.arrayBuffer()
         return arrayBufferToBase64(buf)
@@ -105,22 +105,22 @@ function drawSheetBanner(workbook, worksheet, logoBase64, startRow) {
     worksheet.mergeCells(r, 2, r, 4)
     const titleCell = worksheet.getCell(r, 2)
     titleCell.value = 'Informe de usuarios'
-    titleCell.font = { bold: true, size: 17, color: { argb: COL.emerald900 } }
+    titleCell.font = { bold: true, size: 17, color: { argb: COL.brand900 } }
     titleCell.alignment = { vertical: 'middle', horizontal: 'left' }
-    titleCell.border = thinBorder(COL.emerald100)
-    fillCell(titleCell, COL.emerald50)
-    fillCell(worksheet.getCell(r, 1), COL.emerald50)
+    titleCell.border = thinBorder(COL.brand100)
+    fillCell(titleCell, COL.brand50)
+    fillCell(worksheet.getCell(r, 1), COL.brand50)
     worksheet.getRow(r).height = 28
 
     const r2 = r + 1
     worksheet.mergeCells(r2, 2, r2, 4)
     const sub = worksheet.getCell(r2, 2)
-    sub.value = 'NXT.IT · Todo para oficina · Panel de administración'
-    sub.font = { size: 11, color: { argb: COL.emerald700 }, italic: true }
+    sub.value = 'Salud sin barreras · Panel de administración'
+    sub.font = { size: 11, color: { argb: COL.brand700 }, italic: true }
     sub.alignment = { vertical: 'middle', horizontal: 'left' }
-    sub.border = thinBorder(COL.emerald100)
-    fillCell(sub, COL.emerald50)
-    fillCell(worksheet.getCell(r2, 1), COL.emerald50)
+    sub.border = thinBorder(COL.brand100)
+    fillCell(sub, COL.brand50)
+    fillCell(worksheet.getCell(r2, 1), COL.brand50)
     worksheet.getRow(r2).height = 22
 
     const r3 = r + 2
@@ -129,7 +129,7 @@ function drawSheetBanner(workbook, worksheet, logoBase64, startRow) {
     fecha.value = `Generado: ${new Date().toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'medium' })}`
     fecha.font = { size: 10, color: { argb: COL.gray600 } }
     fecha.alignment = { vertical: 'middle', horizontal: 'left' }
-    fecha.border = thinBorder(COL.emerald100)
+    fecha.border = thinBorder(COL.brand100)
     fillCell(fecha, COL.white)
     fillCell(worksheet.getCell(r3, 1), COL.white)
     worksheet.getRow(r3).height = 20
@@ -169,7 +169,7 @@ export async function downloadInformeUsuariosXlsx(users, permissionsCatalog = []
 
     const logoBase64 = await loadLogoBase64()
     const workbook = new Workbook()
-    workbook.creator = 'NXT.IT'
+    workbook.creator = 'Salud sin barreras'
     workbook.created = new Date()
     workbook.modified = new Date()
     workbook.title = 'Informe de usuarios'

@@ -5,20 +5,19 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/hooks/useAdminAuth'
+import { useDarkModePreference } from '@/hooks/useDarkModePreference'
 import { useMobileLeftDrawerSwipe } from '@/hooks/useMobileLeftDrawerSwipe'
 import IconoNavegacion from '@/components/IconoNavegacion'
+import { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TITLE } from '@/lib/branding'
+
+const ADMIN_FAVICON = BRAND_LOGO_SRC
 
 const navItems = [
     { href: '/admin-home', label: 'Inicio', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-    { href: '/admin-margen-venta', label: 'Margen venta', gananciaIcon: true },
-    { href: '/admin-mensajes', label: 'Mensajería', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
-    { href: '/admin-respaldo', label: 'Respaldo BD', icon: 'M12 8c-3.314 0-6 1.343-6 3v2c0 1.657 2.686 3 6 3s6-1.343 6-3v-2c0-1.657-2.686-3-6-3zm0 8c-3.314 0-6-1.343-6-3v3c0 1.657 2.686 3 6 3s6-1.343 6-3v-3c0 1.657-2.686 3-6 3zm0 5c-3.314 0-6-1.343-6-3v3c0 1.657 2.686 3 6 3s6-1.343 6-3v-3c0 1.657-2.686 3-6 3z' },
-    { href: '/admin-pedidos', label: 'Pedidos', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
-    { href: '/admin-cotizaciones-invitado', label: 'Cotiz. invitados', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { href: '/admin-clientes', label: 'Clientes', icon: 'M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2m12 0H7m10-8a4 4 0 11-8 0 4 4 0 018 0z' },
+    { href: '/admin-paquetes', label: 'Paquetes', icon: 'M20 13V7a2 2 0 00-2-2h-4V3H10v2H6a2 2 0 00-2 2v6H2v2h2v6a2 2 0 002 2h4v-2h4v2h4a2 2 0 002-2v-6h2v-2h-2z' },
     { href: '/admin-metodos-pago', label: 'Métodos pago', iconImage: '/Imagenes/icons_metodosdepago.png' },
-    { href: '/admin-publicidad', label: 'Publicidad', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
-    { href: '/admin-equipo', label: 'Equipo desarrollo', iconImage: '/Imagenes/icon_equipo.png' },
-    { href: '/admin-productos-manuales', label: 'Productos manuales', icon: 'M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+    { href: '/admin-descuentos-tienda', label: 'Descuentos tienda', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { href: '/admin-gestion-usuarios', label: 'Gestionar usuarios', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
 ]
 
@@ -26,7 +25,7 @@ export default function AdminLayout({ children }) {
     const pathname = usePathname()
     const router = useRouter()
     const { user, logout } = useAdminAuth({ middleware: 'auth' })
-    const [darkMode, setDarkMode] = useState(true)
+    const { darkMode, setDarkMode } = useDarkModePreference()
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
@@ -34,15 +33,21 @@ export default function AdminLayout({ children }) {
     const adminMenuRef = useRef(null)
 
     useEffect(() => {
-        setMounted(true)
+        document.title = BRAND_TITLE
+        ;['icon', 'shortcut icon', 'apple-touch-icon'].forEach((rel) => {
+            let link = document.querySelector(`link[rel="${rel}"]`)
+            if (!link) {
+                link = document.createElement('link')
+                link.rel = rel
+                document.head.appendChild(link)
+            }
+            link.href = ADMIN_FAVICON
+        })
     }, [])
 
     useEffect(() => {
-        if (!mounted) return
-        if (typeof window !== 'undefined') {
-            setDarkMode(JSON.parse(localStorage.getItem('darkMode') ?? 'true'))
-        }
-    }, [mounted])
+        setMounted(true)
+    }, [])
 
     useEffect(() => {
         if (!mounted) return
@@ -52,20 +57,6 @@ export default function AdminLayout({ children }) {
             router.push('/admin-login')
         }
     }, [mounted, router])
-
-    useEffect(() => {
-        if (darkMode) document.documentElement.classList.add('dark')
-        else document.documentElement.classList.remove('dark')
-    }, [darkMode])
-
-    useEffect(() => {
-        if (!mounted) return
-        const onToggle = (e) => {
-            setDarkMode(!!e.detail)
-        }
-        window.addEventListener('darkModeChange', onToggle)
-        return () => window.removeEventListener('darkModeChange', onToggle)
-    }, [mounted])
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -133,15 +124,15 @@ export default function AdminLayout({ children }) {
                 <div className={`flex items-center justify-between h-16 px-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center gap-2 min-w-0">
                         <Image
-                            src="/Imagenes/logo_en.png"
-                            alt="Todo para oficina"
+                            src={BRAND_LOGO_SRC}
+                            alt={BRAND_NAME}
                             width={30}
                             height={30}
                             className="w-7 h-7 object-contain shrink-0"
                         />
                         {sidebarOpen && (
-                            <span className="font-bold text-emerald-400 truncate">
-                                Todo para oficina
+                            <span className="font-bold text-[#D6B45B] truncate">
+                                {BRAND_NAME}
                             </span>
                         )}
                     </div>
@@ -158,7 +149,7 @@ export default function AdminLayout({ children }) {
                             item.gananciaIcon && !active
                                 ? darkMode
                                     ? ''
-                                    : 'text-emerald-600'
+                                    : 'text-[#B7962D]'
                                 : ''
                         return (
                         <Link
@@ -166,7 +157,7 @@ export default function AdminLayout({ children }) {
                             href={item.href}
                             className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-colors ${
                                 active
-                                    ? 'bg-emerald-600 text-white'
+                                    ? 'bg-[#B7962D] text-white'
                                     : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                             }`}
                         >
@@ -181,7 +172,7 @@ export default function AdminLayout({ children }) {
                             ) : item.iconImage ? (
                                 active ? (
                                     <span
-                                        className="inline-flex shrink-0 items-center justify-center rounded-lg bg-emerald-950/55 p-0.5 ring-1 ring-emerald-400/25"
+                                        className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#6F5B2A]/55 p-0.5 ring-1 ring-[#D6B45B]/25"
                                         aria-hidden
                                     >
                                         <Image
@@ -192,7 +183,7 @@ export default function AdminLayout({ children }) {
                                             className="h-5 w-5 object-contain"
                                             style={{
                                                 filter:
-                                                    'brightness(0) saturate(100%) invert(84%) sepia(31%) saturate(638%) hue-rotate(93deg)',
+                                                    'brightness(0) saturate(100%) invert(100%)',
                                             }}
                                         />
                                     </span>
@@ -240,16 +231,9 @@ export default function AdminLayout({ children }) {
                                 <Image src="/Imagenes/icon_modo.webp" alt="" width={16} height={16} className="w-4 h-4 object-contain" />
                             </span>
                             <button
-                                onClick={() => {
-                                    const newMode = !darkMode
-                                    setDarkMode(newMode)
-                                    if (typeof window !== 'undefined') {
-                                        localStorage.setItem('darkMode', JSON.stringify(newMode))
-                                        window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
-                                    }
-                                }}
-                                className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
-                                    darkMode ? 'bg-emerald-600' : 'bg-gray-300'
+                                onClick={() => setDarkMode(!darkMode)}
+                                className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 ${
+                                    darkMode ? 'bg-[#B7962D]' : 'bg-gray-300'
                                 }`}
                                 aria-label="Modo oscuro / claro"
                             >
@@ -306,16 +290,9 @@ export default function AdminLayout({ children }) {
                             <Image src="/Imagenes/icon_modo.webp" alt="" width={16} height={16} className="w-4 h-4 object-contain" />
                             <button
                                 type="button"
-                                onClick={() => {
-                                    const newMode = !darkMode
-                                    setDarkMode(newMode)
-                                    if (typeof window !== 'undefined') {
-                                        localStorage.setItem('darkMode', JSON.stringify(newMode))
-                                        window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
-                                    }
-                                }}
+                                onClick={() => setDarkMode(!darkMode)}
                                 className={`relative inline-flex h-6 w-12 shrink-0 items-center rounded-full transition-colors ${
-                                    darkMode ? 'bg-emerald-600' : 'bg-gray-300'
+                                    darkMode ? 'bg-[#B7962D]' : 'bg-gray-300'
                                 }`}
                                 aria-label="Modo oscuro / claro"
                             >

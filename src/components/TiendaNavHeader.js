@@ -10,6 +10,7 @@ import { useCarrito } from '@/lib/carrito'
 import { useFavoritos } from '@/lib/favoritos'
 import { useProductosByClaves } from '@/hooks/useProductosChunked'
 import IconoNavegacion from '@/components/IconoNavegacion'
+import { BRAND_LOGO_SRC, BRAND_NAME } from '@/lib/branding'
 
 /**
  * Barra de navegación de la tienda: logo, toggle oscuro, Favoritos, Carrito; enlaces Tienda/Inicio según ruta.
@@ -72,14 +73,7 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
         return () => document.removeEventListener('click', handleClickOutside)
     }, [userDropdownOpen])
 
-    const toggleDark = () => {
-        const next = !darkMode
-        setDarkMode(next)
-        localStorage.setItem('darkMode', JSON.stringify(next))
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('darkModeChange', { detail: next }))
-        }
-    }
+    const toggleDark = () => setDarkMode(!darkMode)
 
     const pill = `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
         darkMode ? 'bg-gray-800/80 text-gray-200 hover:bg-gray-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
@@ -99,7 +93,7 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="hidden md:flex items-center justify-between h-16 gap-4">
                     <Link href="/" className="flex items-center shrink-0">
-                        <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={120} height={40} className="h-8 w-auto" />
+                        <Image src={BRAND_LOGO_SRC} alt={BRAND_NAME} width={120} height={40} className="h-8 w-auto" />
                     </Link>
                     <div className="flex-1 max-w-md">
                         <SearchBar darkMode={darkMode} />
@@ -286,8 +280,8 @@ export default function TiendaNavHeader({ darkMode, setDarkMode, onToggleLeftSid
                             </div>
                             <Link href="/" className="flex min-w-0 flex-1 justify-center px-1">
                                 <Image
-                                    src="/Imagenes/logo_en.png"
-                                    alt="Todo para oficina"
+                                    src={BRAND_LOGO_SRC}
+                                    alt={BRAND_NAME}
                                     width={108}
                                     height={36}
                                     className="h-7 w-auto max-w-[min(100%,180px)] sm:h-8"

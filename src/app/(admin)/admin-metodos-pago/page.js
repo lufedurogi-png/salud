@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import axios from '@/lib/axios'
+import { useDarkModePreference } from '@/hooks/useDarkModePreference'
 
 const METHOD_ICON = {
     paypal: '/Imagenes/PayPal.png',
@@ -11,7 +12,7 @@ const METHOD_ICON = {
 }
 
 export default function AdminMetodosPagoPage() {
-    const [darkMode, setDarkMode] = useState(true)
+    const { darkMode } = useDarkModePreference()
     const [loading, setLoading] = useState(true)
     const [savingCode, setSavingCode] = useState(null)
     const [error, setError] = useState('')
@@ -19,16 +20,6 @@ export default function AdminMetodosPagoPage() {
     const [methods, setMethods] = useState([])
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
-
-    useEffect(() => {
-        setDarkMode(JSON.parse(localStorage.getItem('darkMode') ?? 'true'))
-    }, [])
-
-    useEffect(() => {
-        const onDarkModeChange = (e) => setDarkMode(!!e.detail)
-        window.addEventListener('darkModeChange', onDarkModeChange)
-        return () => window.removeEventListener('darkModeChange', onDarkModeChange)
-    }, [])
 
     const loadMethods = useCallback(async () => {
         setLoading(true)
@@ -84,11 +75,11 @@ export default function AdminMetodosPagoPage() {
     const activeCount = methods.filter((m) => !!m.active).length
     const inactiveCount = Math.max(0, methods.length - activeCount)
     const panelShell = darkMode
-        ? 'rounded-2xl overflow-hidden border-2 border-emerald-900/40 bg-gray-800 shadow-xl'
-        : 'rounded-2xl overflow-hidden border-2 border-emerald-200/90 bg-white shadow-xl'
+        ? 'rounded-2xl overflow-hidden border-2 border-[#6F5B2A]/40 bg-gray-800 shadow-xl'
+        : 'rounded-2xl overflow-hidden border-2 border-[#E5DECF]/90 bg-white shadow-xl'
     const panelHead = darkMode
-        ? 'bg-emerald-600/25 border-b-2 border-emerald-500/40'
-        : 'bg-emerald-100 border-b-2 border-emerald-300'
+        ? 'bg-[#B7962D]/25 border-b-2 border-[#C9A84C]/40'
+        : 'bg-[#F8F5EF] border-b-2 border-[#E5C978]'
 
     return (
         <div className="space-y-6">
@@ -96,7 +87,7 @@ export default function AdminMetodosPagoPage() {
                 <div className={`px-5 py-4 ${panelHead}`}>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className={`rounded-xl p-2.5 ${darkMode ? 'bg-emerald-700/35 ring-1 ring-emerald-400/40' : 'bg-white ring-1 ring-emerald-300'}`}>
+                        <div className={`rounded-xl p-2.5 ${darkMode ? 'bg-[#A88A2B]/35 ring-1 ring-[#D6B45B]/40' : 'bg-white ring-1 ring-[#E5C978]'}`}>
                             <Image src="/Imagenes/icons_metodosdepago.png" alt="" width={30} height={30} />
                         </div>
                         <div>
@@ -107,7 +98,7 @@ export default function AdminMetodosPagoPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className={`rounded-lg px-3 py-1 text-xs font-semibold ${darkMode ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/60' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                        <span className={`rounded-lg px-3 py-1 text-xs font-semibold ${darkMode ? 'bg-[#6F5B2A]/40 text-[#E5C978] border border-[#A88A2B]/60' : 'bg-[#FBF8F2] text-[#A88A2B] border border-[#E5DECF]'}`}>
                             Activos: {activeCount}
                         </span>
                         <span className={`rounded-lg px-3 py-1 text-xs font-semibold ${darkMode ? 'bg-amber-900/30 text-amber-300 border border-amber-700/60' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
@@ -119,7 +110,7 @@ export default function AdminMetodosPagoPage() {
             </div>
 
             {message && (
-                <div className={`rounded-lg border px-4 py-3 text-sm ${darkMode ? 'border-emerald-700 bg-emerald-900/30 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+                <div className={`rounded-lg border px-4 py-3 text-sm ${darkMode ? 'border-[#A88A2B] bg-[#6F5B2A]/30 text-[#E5DECF]' : 'border-[#E5DECF] bg-[#FBF8F2] text-[#8A6F2A]'}`}>
                     {message}
                 </div>
             )}
@@ -158,16 +149,16 @@ export default function AdminMetodosPagoPage() {
                                         className={`rounded-xl border-2 p-4 transition-all ${
                                             darkMode
                                                 ? active
-                                                    ? 'bg-gray-900/70 border-emerald-600/60'
+                                                    ? 'bg-gray-900/70 border-[#B7962D]/60'
                                                     : 'bg-gray-900/40 border-amber-500/50'
                                                 : active
-                                                    ? 'bg-emerald-50/40 border-emerald-300'
+                                                    ? 'bg-[#FBF8F2]/40 border-[#E5C978]'
                                                     : 'bg-amber-50/40 border-amber-300'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex items-center gap-3 min-w-0">
-                                                <div className={`h-14 w-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-amber-500'}`} aria-hidden />
+                                                <div className={`h-14 w-1.5 rounded-full ${active ? 'bg-[#C9A84C]' : 'bg-amber-500'}`} aria-hidden />
                                                 <div className={`rounded-lg p-2 ${darkMode ? 'bg-gray-800 ring-1 ring-gray-700' : 'bg-white ring-1 ring-gray-200'}`}>
                                                     <Image
                                                         src={METHOD_ICON[method.code] || '/Imagenes/icons_metodosdepago.png'}
@@ -180,7 +171,7 @@ export default function AdminMetodosPagoPage() {
                                                 <div className="min-w-0">
                                                     <p className={`font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{method.label}</p>
                                                     <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{method.description}</p>
-                                                    <p className={`mt-1 text-xs font-semibold ${active ? 'text-emerald-500' : (darkMode ? 'text-amber-400' : 'text-amber-600')}`}>
+                                                    <p className={`mt-1 text-xs font-semibold ${active ? 'text-[#C9A84C]' : (darkMode ? 'text-amber-400' : 'text-amber-600')}`}>
                                                         {active ? 'Activo' : 'Inactivo'}
                                                     </p>
                                                 </div>
@@ -191,7 +182,7 @@ export default function AdminMetodosPagoPage() {
                                                     disabled={!canToggle || busy}
                                                     onClick={() => handleToggle(method.code, active)}
                                                     className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                                                        active ? 'bg-emerald-600' : 'bg-gray-400'
+                                                        active ? 'bg-[#B7962D]' : 'bg-gray-400'
                                                     } disabled:opacity-60`}
                                                     aria-label={`Cambiar estado de ${method.label}`}
                                                 >
@@ -237,7 +228,7 @@ export default function AdminMetodosPagoPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword((v) => !v)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50"
                                     aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                                 >
                                     <Image
@@ -251,8 +242,8 @@ export default function AdminMetodosPagoPage() {
                             </div>
                             <div className={`mt-3 rounded-lg border-2 px-3 py-2 text-xs ${canToggle
                                 ? darkMode
-                                    ? 'border-emerald-700/70 bg-emerald-900/20 text-emerald-300'
-                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    ? 'border-[#A88A2B]/70 bg-[#6F5B2A]/20 text-[#E5C978]'
+                                    : 'border-[#E5DECF] bg-[#FBF8F2] text-[#A88A2B]'
                                 : darkMode
                                     ? 'border-gray-700 bg-gray-900/70 text-gray-400'
                                     : 'border-gray-200 bg-gray-50 text-gray-600'
@@ -272,9 +263,9 @@ export default function AdminMetodosPagoPage() {
                         </div>
                         <div className="p-5">
                             <ul className={`space-y-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Checkout de carrito</li>
-                                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Checkout de cotizaciones en tienda</li>
-                                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Checkout de cotizaciones en dashboard</li>
+                                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#C9A84C]" /> Checkout de carrito</li>
+                                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#C9A84C]" /> Checkout de cotizaciones en tienda</li>
+                                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#C9A84C]" /> Checkout de cotizaciones en dashboard</li>
                             </ul>
                         </div>
                     </div>

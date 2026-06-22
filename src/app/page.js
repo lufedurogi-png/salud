@@ -1,13 +1,17 @@
-import { Suspense } from 'react'
-import { getTiendaDataForSSR } from '@/lib/productos'
-import TiendaClient from './tienda/TiendaClient'
+'use client'
 
-/** Página principal: ahora muestra la tienda en /. */
-export default async function HomePage() {
-    const initialData = await getTiendaDataForSSR()
-    return (
-        <Suspense fallback={null}>
-            <TiendaClient initialData={initialData} />
-        </Suspense>
-    )
+import {useEffect} from 'react'
+import {useRouter} from 'next/navigation'
+
+export default function HomePage() {
+    const router = useRouter()
+
+    useEffect(() => {
+        const token = localStorage.getItem('auth_token')
+        if (token) router.replace('/dashboard')
+        else router.replace('/login')
+    }, [router])
+
+    return null
 }
+

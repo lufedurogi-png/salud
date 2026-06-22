@@ -11,7 +11,7 @@ import {
 } from '@/lib/chatApi'
 
 const COLOR_CLIENTE = '#FF8000'
-const COLOR_ADMIN = '#059669'
+const COLOR_ADMIN = '#B7962D'
 
 export default function ChatVentasCliente({ darkMode }) {
     const [mensajes, setMensajes] = useState([])

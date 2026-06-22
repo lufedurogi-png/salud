@@ -8,6 +8,7 @@ import Label from '@/components/Label'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/auth'
 import { useEffect, useState } from 'react'
+import { useDarkModePreference } from '@/hooks/useDarkModePreference'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AuthSessionStatus from '@/app/(auth)/AuthSessionStatus'
 
@@ -31,40 +32,7 @@ const Login = () => {
     const [isExpanded, setIsExpanded] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
 
-    const [darkMode, setDarkMode] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('darkMode')
-            return saved !== null ? JSON.parse(saved) : true
-        }
-        return true
-    })
-
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-        localStorage.setItem('darkMode', JSON.stringify(darkMode))
-    }, [darkMode])
-
-    useEffect(() => {
-        const handleDarkModeChange = (e) => {
-            setDarkMode(e.detail)
-        }
-        const handleStorageChange = (e) => {
-            if (e.key === 'darkMode') {
-                const newMode = JSON.parse(e.newValue)
-                setDarkMode(newMode)
-            }
-        }
-        window.addEventListener('darkModeChange', handleDarkModeChange)
-        window.addEventListener('storage', handleStorageChange)
-        return () => {
-            window.removeEventListener('darkModeChange', handleDarkModeChange)
-            window.removeEventListener('storage', handleStorageChange)
-        }
-    }, [])
+    const { darkMode } = useDarkModePreference()
 
     // Detectar tamaño de pantalla
     useEffect(() => {
@@ -112,9 +80,9 @@ const Login = () => {
         <div className="relative w-full overflow-hidden" style={{ height: 'calc(100vh - 4rem)' }}>
             {/* Contenedor principal split-screen */}
             <div className="flex flex-col lg:flex-row h-full w-full relative">
-                {/* Lado izquierdo - Cortina Naranja - Se expande de izquierda a derecha */}
+                {/* Lado izquierdo - Cortina dorada */}
                 <div 
-                    className={`lg:absolute lg:left-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#FF8000] to-[#FF9500] transition-all duration-1000 ease-in-out z-50 order-1 ${
+                    className={`lg:absolute lg:left-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#B7962D] to-[#D6B45B] transition-all duration-1000 ease-in-out z-50 order-1 ${
                         isExpanded 
                             ? 'h-full fixed top-0 bottom-0 left-0' 
                             : 'h-auto lg:h-full min-h-[250px] sm:min-h-[300px] lg:min-h-0'
@@ -146,7 +114,7 @@ const Login = () => {
                         </p>
                         <button
                             onClick={handleSwitchToRegister}
-                            className="px-6 sm:px-8 py-2 sm:py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-[#FF8000] transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
+                            className="px-6 sm:px-8 py-2 sm:py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-[#B7962D] transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
                         >
                             Registrarse
                         </button>
@@ -181,8 +149,8 @@ const Login = () => {
                                         value={email}
                                         className={`block w-full px-4 py-3 pl-11 rounded-lg text-sm transition-all duration-200 ${
                                             darkMode 
-                                                ? (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
-                                                : (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
+                                                ? (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
+                                                : (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
                                         }`}
                                         onChange={event => setEmail(event.target.value)}
                                         required
@@ -209,8 +177,8 @@ const Login = () => {
                                         value={password}
                                         className={`block w-full px-4 py-3 pl-11 pr-12 rounded-lg text-sm transition-all duration-200 ${
                                             darkMode 
-                                                ? (password.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
-                                                : (password.trim() ? 'bg-[#E8EDFF] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
+                                                ? (password.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
+                                                : (password.trim() ? 'bg-[#E8EDFF] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
                                         }`}
                                         onChange={event => setPassword(event.target.value)}
                                         required
@@ -224,7 +192,7 @@ const Login = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword((s) => !s)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#FF8000]/50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#B7962D]/50"
                                         aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                                         tabIndex={0}
                                     >
@@ -251,7 +219,7 @@ const Login = () => {
                                         id="remember_me"
                                         type="checkbox"
                                         name="remember"
-                                        className={`rounded border-gray-300 text-[#FF8000] shadow-sm focus:border-[#FF8000] focus:ring focus:ring-[#FF8000] focus:ring-opacity-50 w-4 h-4 ${
+                                        className={`rounded border-gray-300 text-[#B7962D] shadow-sm focus:border-[#B7962D] focus:ring focus:ring-[#B7962D] focus:ring-opacity-50 w-4 h-4 ${
                                             darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white'
                                         }`}
                                         onChange={event => setShouldRemember(event.target.checked)}
@@ -264,8 +232,8 @@ const Login = () => {
                                     href="/forgot-password"
                                     className={`text-sm transition-colors whitespace-nowrap font-medium ${
                                         darkMode 
-                                            ? 'text-gray-200 hover:text-[#FF8000]' 
-                                            : 'text-gray-600 hover:text-[#FF8000]'
+                                            ? 'text-gray-200 hover:text-[#B7962D]' 
+                                            : 'text-gray-600 hover:text-[#B7962D]'
                                     }`}>
                                     ¿Olvidaste tu contraseña?
                                 </Link>
@@ -280,7 +248,7 @@ const Login = () => {
 
                             <Button 
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-[#FF8000] to-[#FF9500] hover:from-[#FF9500] hover:to-[#FF8000] text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform mt-2"
+                                className="w-full bg-gradient-to-r from-[#B7962D] to-[#D6B45B] hover:from-[#A88A2B] hover:to-[#C9A84C] text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform mt-2"
                             >
                                 INICIAR SESIÓN
                             </Button>
@@ -291,8 +259,8 @@ const Login = () => {
                                     onClick={handleSwitchToRegister}
                                     className={`text-sm transition-colors ${
                                         darkMode 
-                                            ? 'text-gray-200 hover:text-[#FF8000]' 
-                                            : 'text-gray-600 hover:text-[#FF8000]'
+                                            ? 'text-gray-200 hover:text-[#B7962D]' 
+                                            : 'text-gray-600 hover:text-[#B7962D]'
                                     }`}
                                 >
                                     ¿No tienes cuenta? <span className="font-semibold">Regístrate</span>

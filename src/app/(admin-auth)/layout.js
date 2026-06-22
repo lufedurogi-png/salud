@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { BRAND_LOGO_SRC, BRAND_NAME } from '@/lib/branding'
 import ThemeToggle from '@/components/ThemeToggle'
 import { AdminThemeProvider, useAdminTheme } from './AdminThemeContext'
 
@@ -22,7 +23,7 @@ function LayoutContent({ children }) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="hidden md:flex items-center justify-between h-16">
                         <Link href="/" className="flex items-center">
-                            <Image src="/Imagenes/logo_en.png" alt="NXT.IT" width={120} height={40} className="h-8 w-auto" />
+                            <Image src={BRAND_LOGO_SRC} alt={BRAND_NAME} width={120} height={40} className="h-8 w-auto" />
                         </Link>
                         <ThemeToggle dark={darkMode} onToggle={() => setDarkMode((d) => !d)} />
                     </div>
@@ -30,7 +31,7 @@ function LayoutContent({ children }) {
                     <div className="md:hidden py-3 space-y-3">
                         <div className="flex justify-center">
                             <Link href="/" className="flex items-center">
-                                <Image src="/Imagenes/logo_en.png" alt="NXT.IT" width={110} height={36} className="h-8 w-auto" />
+                                <Image src={BRAND_LOGO_SRC} alt={BRAND_NAME} width={110} height={36} className="h-8 w-auto" />
                             </Link>
                         </div>
                         <div className={`flex flex-wrap items-center gap-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>

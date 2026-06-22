@@ -134,7 +134,7 @@ export async function downloadCotizacionPdf(items, total, nombreArchivo) {
     doc.setFontSize(9)
     doc.setFont(undefined, 'normal')
     doc.setTextColor(156, 163, 175)
-    doc.text(`Cotización · Todo para la oficina · ${fechaStr}`, pageW / 2, footerY, { align: 'center' })
+    doc.text(`Cotización · Salud sin barreras · ${fechaStr}`, pageW / 2, footerY, { align: 'center' })
 
     doc.save(file)
 }

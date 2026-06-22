@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { formatMessageTime } from '@/lib/chatApi'
 
 const COLOR_CLIENTE = '#FF8000'
-const COLOR_ADMIN = '#059669'
+const COLOR_ADMIN = '#B7962D'
 
 export default function AdminChatView({
     darkMode,
@@ -146,7 +146,7 @@ export default function AdminChatView({
                     e.preventDefault()
                     onEnviar()
                 }}
-                className={`flex gap-2 items-center rounded-2xl border-2 overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500 transition-shadow ${darkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-200 bg-white'}`}
+                className={`flex gap-2 items-center rounded-2xl border-2 overflow-hidden focus-within:ring-2 focus-within:ring-[#C9A84C]/50 focus-within:border-[#C9A84C] transition-shadow ${darkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-200 bg-white'}`}
             >
                 <input
                     type="text"
@@ -165,7 +165,7 @@ export default function AdminChatView({
                 <button
                     type="submit"
                     disabled={enviando || !(nuevoTexto || '').trim()}
-                    className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 transition-all m-1"
+                    className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-[#B7962D] hover:bg-[#A88A2B] text-white disabled:opacity-50 transition-all m-1"
                     title="Enviar"
                 >
                     <Image src="/Imagenes/icon_enviar.png" alt="Enviar" width={24} height={24} className="object-contain invert" />

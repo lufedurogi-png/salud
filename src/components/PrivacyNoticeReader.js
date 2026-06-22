@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { BRAND_LOGO_SRC, BRAND_NAME } from '@/lib/branding'
 import { useState, useMemo } from 'react'
 
 function ExternalSocialButton({ href, label, img, rounded, darkMode }) {
@@ -193,7 +194,7 @@ export default function PrivacyNoticeReader({ darkMode, showLogo = true, classNa
             <div className={`flex items-center justify-between gap-3 border-b pb-3 mb-4 ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                 {showLogo ? (
                     <Link href="/" className="shrink-0">
-                        <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={140} height={48} className="h-10 w-auto object-contain" />
+                        <Image src={BRAND_LOGO_SRC} alt={BRAND_NAME} width={140} height={48} className="h-10 w-auto object-contain" />
                     </Link>
                 ) : (
                     <span />

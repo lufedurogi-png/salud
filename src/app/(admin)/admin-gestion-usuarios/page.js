@@ -11,12 +11,13 @@ import Label from '@/components/Label'
 import { getPaginationWindow } from '@/lib/pagination'
 import { swrFetcher } from '@/lib/swrFetcher'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useDarkModePreference } from '@/hooks/useDarkModePreference'
 import { downloadInformeUsuariosXlsx } from '@/lib/adminUsuariosReportXlsx'
 
 function RoleBadge({ role, darkMode }) {
     const r = (role || '').toLowerCase()
     const styles = {
-        admin: darkMode ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        admin: darkMode ? 'bg-[#C9A84C]/20 text-[#D6B45B] border-[#C9A84C]/40' : 'bg-[#F8F5EF] text-[#A88A2B] border-[#E5DECF]',
         customer: darkMode ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' : 'bg-blue-50 text-blue-700 border-blue-200',
         seller: darkMode ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-amber-50 text-amber-700 border-amber-200',
     }
@@ -46,7 +47,7 @@ export default function AdminGestionUsuarios() {
     const [resettingUserId, setResettingUserId] = useState(null)
     const [errors, setErrors] = useState({})
     const [deletingId, setDeletingId] = useState(null)
-    const [darkMode, setDarkMode] = useState(true)
+    const { darkMode } = useDarkModePreference()
     const [addingRoleUserId, setAddingRoleUserId] = useState(null)
     const [addingRoleTipo, setAddingRoleTipo] = useState('')
     const [removingRoleUserId, setRemovingRoleUserId] = useState(null)
@@ -78,15 +79,6 @@ export default function AdminGestionUsuarios() {
     const [reportXlsxLoading, setReportXlsxLoading] = useState(false)
     const USUARIOS_POR_PAGINA = 3
     const addRoleSelectRef = useRef(null)
-
-    useEffect(() => {
-        setDarkMode(JSON.parse(localStorage.getItem('darkMode') ?? 'true'))
-    }, [])
-    useEffect(() => {
-        const onDarkModeChange = (e) => setDarkMode(!!e.detail)
-        window.addEventListener('darkModeChange', onDarkModeChange)
-        return () => window.removeEventListener('darkModeChange', onDarkModeChange)
-    }, [])
 
     const usersParams = new URLSearchParams()
     if (debouncedSearch) usersParams.set('search', debouncedSearch)
@@ -275,12 +267,12 @@ export default function AdminGestionUsuarios() {
     }
 
     const getFilterInputClass = (hasValue) => darkMode
-        ? `w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 ${hasValue ? 'bg-[#E5EBFD] border-gray-600 text-gray-900' : 'bg-gray-700/80 border-gray-600 text-white'}`
-        : `w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 ${hasValue ? 'bg-[#E5EBFD] border-gray-300 text-gray-900' : 'bg-white border-gray-300 text-gray-900'}`
+        ? `w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C] ${hasValue ? 'bg-[#E5EBFD] border-gray-600 text-gray-900' : 'bg-gray-700/80 border-gray-600 text-white'}`
+        : `w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-[#C9A84C]/30 focus:border-[#C9A84C] ${hasValue ? 'bg-[#E5EBFD] border-gray-300 text-gray-900' : 'bg-white border-gray-300 text-gray-900'}`
     const getTableInputClass = (hasValue) => darkMode
-        ? `w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-emerald-500/40 ${hasValue ? 'bg-[#E5EBFD] border-gray-600 text-gray-900' : 'bg-gray-700 border-gray-600 text-white'}`
-        : `w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-emerald-500/30 ${hasValue ? 'bg-[#E5EBFD] border-gray-300 text-gray-900' : 'bg-white border-gray-300 text-gray-900'}`
-    const filterSelectClass = darkMode ? 'px-4 py-2.5 rounded-lg bg-gray-700/80 border border-gray-600 text-white focus:ring-2 focus:ring-emerald-500/40' : 'px-4 py-2.5 rounded-lg bg-white border border-gray-300 text-gray-900 focus:ring-2 focus:ring-emerald-500/30'
+        ? `w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-[#C9A84C]/40 ${hasValue ? 'bg-[#E5EBFD] border-gray-600 text-gray-900' : 'bg-gray-700 border-gray-600 text-white'}`
+        : `w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-[#C9A84C]/30 ${hasValue ? 'bg-[#E5EBFD] border-gray-300 text-gray-900' : 'bg-white border-gray-300 text-gray-900'}`
+    const filterSelectClass = darkMode ? 'px-4 py-2.5 rounded-lg bg-gray-700/80 border border-gray-600 text-white focus:ring-2 focus:ring-[#C9A84C]/40' : 'px-4 py-2.5 rounded-lg bg-white border border-gray-300 text-gray-900 focus:ring-2 focus:ring-[#C9A84C]/30'
     const filterLabelClass = darkMode ? 'text-gray-400 block mb-1.5 text-sm font-medium' : 'text-gray-600 block mb-1.5 text-sm font-medium'
     const tableSelectClass = darkMode ? 'px-2 py-1.5 text-sm border rounded bg-gray-700 text-white border-gray-600' : 'px-2 py-1.5 text-sm border rounded bg-white text-gray-900 border-gray-300'
     const cellTextClass = darkMode ? 'text-gray-200' : 'text-gray-800'
@@ -319,7 +311,7 @@ export default function AdminGestionUsuarios() {
     const btn = (color, extra = '') => {
         const base = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200'
         const colors = {
-            emerald: 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/40',
+            gold: 'bg-[#C9A84C]/20 text-[#D6B45B] hover:bg-[#C9A84C]/30 border border-[#C9A84C]/40',
             amber: 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/40',
             red: 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/40',
             muted: darkMode ? 'bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 border border-gray-500/40' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200',
@@ -331,7 +323,7 @@ export default function AdminGestionUsuarios() {
         <div className="space-y-8">
             {/* Encabezado */}
             <div className="flex items-center gap-4">
-                <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
+                <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${darkMode ? 'bg-[#C9A84C]/20 text-[#D6B45B]' : 'bg-[#F8F5EF] text-[#B7962D]'}`}>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                 </span>
                 <div>
@@ -342,12 +334,12 @@ export default function AdminGestionUsuarios() {
 
             {/* Form Crear usuario */}
             <div className={`rounded-xl overflow-hidden border shadow-xl ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                <div className={`px-5 py-4 ${darkMode ? 'bg-emerald-600/25 border-b border-emerald-500/30' : 'bg-emerald-50 border-b border-emerald-200'}`}>
+                <div className={`px-5 py-4 ${darkMode ? 'bg-[#B7962D]/25 border-b border-[#C9A84C]/30' : 'bg-[#FBF8F2] border-b border-[#E5DECF]'}`}>
                     <div className="flex items-center gap-3">
-                        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${darkMode ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 text-emerald-600'}`}>
+                        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${darkMode ? 'bg-[#C9A84C]/30 text-[#E5C978]' : 'bg-[#F8F5EF] text-[#B7962D]'}`}>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                         </span>
-                        <h2 className={`text-lg font-bold ${darkMode ? 'text-emerald-200' : 'text-emerald-800'}`}>Nuevo usuario</h2>
+                        <h2 className={`text-lg font-bold ${darkMode ? 'text-[#E5DECF]' : 'text-[#8A6F2A]'}`}>Nuevo usuario</h2>
                     </div>
                 </div>
                 <div className="p-6">
@@ -380,7 +372,7 @@ export default function AdminGestionUsuarios() {
                                     <button
                                         type="button"
                                         onClick={() => setShowCreatePassword((s) => !s)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50"
                                         aria-label={showCreatePassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                                         tabIndex={0}
                                     >
@@ -394,8 +386,8 @@ export default function AdminGestionUsuarios() {
                                                     <p id="create-password-requirements-title" className={`text-xs font-semibold mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Requisitos de la contraseña</p>
                                                     <ul className="space-y-1.5">
                                                         {createPasswordRequirements.map(({ key, label, met }) => (
-                                                            <li key={key} className={`flex items-center gap-2 text-sm ${met ? 'text-green-600 dark:text-green-400' : darkMode ? 'text-red-400' : 'text-red-600'}`}>
-                                                                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${met ? 'border-green-500 bg-green-500 text-white dark:border-green-400 dark:bg-green-400' : darkMode ? 'border-red-400 bg-transparent' : 'border-red-500 bg-transparent'}`} aria-hidden>
+                                                            <li key={key} className={`flex items-center gap-2 text-sm ${met ? 'text-[#A88A2B] dark:text-[#D6B45B]' : darkMode ? 'text-red-400' : 'text-red-600'}`}>
+                                                                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${met ? 'border-[#B7962D] bg-[#B7962D] text-white dark:border-[#D6B45B] dark:bg-[#D6B45B]' : darkMode ? 'border-red-400 bg-transparent' : 'border-red-500 bg-transparent'}`} aria-hidden>
                                                                     {met ? <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 12 12"><path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" /></svg> : null}
                                                                 </span>
                                                                 <span>{label}</span>
@@ -424,7 +416,7 @@ export default function AdminGestionUsuarios() {
                                     <button
                                         type="button"
                                         onClick={() => setShowCreatePasswordConfirmation((s) => !s)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50"
                                         aria-label={showCreatePasswordConfirmation ? 'Ocultar confirmación' : 'Ver confirmación'}
                                         tabIndex={0}
                                     >
@@ -440,8 +432,8 @@ export default function AdminGestionUsuarios() {
                                                         {createPasswordConfirmation.length === 0 ? (
                                                             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Escribe la misma contraseña para confirmar.</p>
                                                         ) : createPassword === createPasswordConfirmation ? (
-                                                            <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
-                                                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-green-500 bg-green-500 text-white"><svg className="h-3 w-3" fill="currentColor" viewBox="0 0 12 12"><path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" /></svg></span>
+                                                            <p className="text-sm text-[#A88A2B] dark:text-[#D6B45B] flex items-center gap-2">
+                                                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-[#B7962D] bg-[#B7962D] text-white"><svg className="h-3 w-3" fill="currentColor" viewBox="0 0 12 12"><path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" /></svg></span>
                                                                 Las contraseñas coinciden
                                                             </p>
                                                         ) : (
@@ -480,7 +472,7 @@ export default function AdminGestionUsuarios() {
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateAdminPassword((s) => !s)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50"
                                     aria-label={showCreateAdminPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                                     tabIndex={0}
                                 >
@@ -490,9 +482,9 @@ export default function AdminGestionUsuarios() {
                             <InputError messages={errors.adminPassword} />
                         </div>
                         {createSuccess && (
-                            <div className={`flex items-center gap-2 rounded-lg px-4 py-3 ${darkMode ? 'bg-emerald-500/20 border border-emerald-500/40' : 'bg-emerald-50 border border-emerald-200'}`}>
-                                <svg className="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">{createSuccess}</p>
+                            <div className={`flex items-center gap-2 rounded-lg px-4 py-3 ${darkMode ? 'bg-[#C9A84C]/20 border border-[#C9A84C]/40' : 'bg-[#FBF8F2] border border-[#E5DECF]'}`}>
+                                <svg className="w-5 h-5 text-[#C9A84C] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                <p className="text-sm font-medium text-[#B7962D] dark:text-[#D6B45B]">{createSuccess}</p>
                             </div>
                         )}
                         <InputError messages={errors.general} />
@@ -501,8 +493,8 @@ export default function AdminGestionUsuarios() {
                             disabled={createLoading}
                             className={`w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                                 darkMode
-                                    ? '!bg-emerald-500 hover:!bg-emerald-400 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40'
-                                    : '!bg-emerald-600 hover:!bg-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/30'
+                                    ? '!bg-[#C9A84C] hover:!bg-[#D6B45B] text-white shadow-lg shadow-[#C9A84C]/30 hover:shadow-[#C9A84C]/40'
+                                    : '!bg-[#B7962D] hover:!bg-[#A88A2B] text-white shadow-lg shadow-[#C9A84C]/25 hover:shadow-[#C9A84C]/30'
                             }`}
                         >
                             {createLoading ? (
@@ -526,7 +518,7 @@ export default function AdminGestionUsuarios() {
                 <div
                     className={`fixed top-20 right-6 z-50 max-w-md rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${
                         actionMessage.type === 'success'
-                            ? (darkMode ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-emerald-50 text-emerald-700 border border-emerald-200')
+                            ? (darkMode ? 'bg-[#C9A84C]/20 text-[#D6B45B] border border-[#C9A84C]/40' : 'bg-[#FBF8F2] text-[#A88A2B] border border-[#E5DECF]')
                             : actionMessage.type === 'info'
                                 ? (darkMode ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' : 'bg-sky-50 text-sky-700 border border-sky-200')
                                 : (darkMode ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'bg-red-50 text-red-700 border border-red-200')
@@ -539,13 +531,13 @@ export default function AdminGestionUsuarios() {
 
             {/* Tabla unificada: filtros + listado */}
             <div className={`rounded-xl overflow-hidden border shadow-xl ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                <div className={`px-5 py-4 ${darkMode ? 'bg-emerald-600/25 border-b border-emerald-500/30' : 'bg-emerald-50 border-b border-emerald-200'}`}>
+                <div className={`px-5 py-4 ${darkMode ? 'bg-[#B7962D]/25 border-b border-[#C9A84C]/30' : 'bg-[#FBF8F2] border-b border-[#E5DECF]'}`}>
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         <div className="flex items-center gap-3">
-                            <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${darkMode ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 text-emerald-600'}`}>
+                            <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${darkMode ? 'bg-[#C9A84C]/30 text-[#E5C978]' : 'bg-[#F8F5EF] text-[#B7962D]'}`}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                             </span>
-                            <h2 className={`text-lg font-bold ${darkMode ? 'text-emerald-200' : 'text-emerald-800'}`}>Listado de usuarios</h2>
+                            <h2 className={`text-lg font-bold ${darkMode ? 'text-[#E5DECF]' : 'text-[#8A6F2A]'}`}>Listado de usuarios</h2>
                         </div>
                         {!loading && <span className={`text-sm font-medium px-3 py-1 rounded-full ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>{users.length} usuario{users.length !== 1 ? 's' : ''}</span>}
                     </div>
@@ -595,8 +587,8 @@ export default function AdminGestionUsuarios() {
                                 }}
                                 className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-semibold shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                                     darkMode
-                                        ? 'bg-emerald-600 text-white hover:bg-emerald-500 border border-emerald-500/50 shadow-emerald-900/30'
-                                        : 'bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-700/20 shadow-emerald-600/20'
+                                        ? 'bg-[#B7962D] text-white hover:bg-[#C9A84C] border border-[#C9A84C]/50 shadow-[#6F5B2A]/30'
+                                        : 'bg-[#B7962D] text-white hover:bg-[#A88A2B] border border-[#A88A2B]/20 shadow-[#B7962D]/20'
                                 }`}
                             >
                                 {reportXlsxLoading ? (
@@ -622,7 +614,7 @@ export default function AdminGestionUsuarios() {
 
                 {loading ? (
                     <div className={`flex flex-col items-center justify-center py-20 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                        <svg className="animate-spin h-10 w-10 text-emerald-500 mb-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                        <svg className="animate-spin h-10 w-10 text-[#C9A84C] mb-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                         <p className="font-medium">Cargando usuarios...</p>
                     </div>
                 ) : users.length === 0 ? (
@@ -734,7 +726,7 @@ export default function AdminGestionUsuarios() {
                                                                     <NextImage src={showAdminPassword ? '/Imagenes/icon_ojo_cerrado.png' : '/Imagenes/icon_ojo_abierto.png'} alt="" width={18} height={18} className="object-contain" />
                                                                 </button>
                                                             </span>
-                                                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddRole(u.id); }} className={btn('emerald')}>Asignar</button>
+                                                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddRole(u.id); }} className={btn('gold')}>Asignar</button>
                                                             <button type="button" onClick={() => { setAddingRoleUserId(null); setAddingRoleTipo('') }} className={btn('muted')}>Cancelar</button>
                                                         </span>
                                                     ) : (
@@ -742,7 +734,7 @@ export default function AdminGestionUsuarios() {
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAddingRoleUserId(u.id); }}
-                                                                className={`text-xs ${darkMode ? 'text-emerald-400 hover:underline' : 'text-emerald-600 hover:underline'}`}
+                                                                className={`text-xs ${darkMode ? 'text-[#D6B45B] hover:underline' : 'text-[#B7962D] hover:underline'}`}
                                                             >
                                                                 + Añadir rol
                                                             </button>
@@ -789,12 +781,12 @@ export default function AdminGestionUsuarios() {
                                                                 <NextImage src={showAdminPassword ? '/Imagenes/icon_ojo_cerrado.png' : '/Imagenes/icon_ojo_abierto.png'} alt="" width={18} height={18} className="object-contain" />
                                                             </button>
                                                         </span>
-                                                        <button type="button" onClick={() => handleGrantPermission(u.id)} className={btn('emerald')}>Conceder</button>
+                                                        <button type="button" onClick={() => handleGrantPermission(u.id)} className={btn('gold')}>Conceder</button>
                                                         <button type="button" onClick={() => { setGrantingPermissionUserId(null); setGrantingPermissionValue('') }} className={btn('muted')}>Cancelar</button>
                                                     </span>
                                                 ) : (
                                                     permissions.some((perm) => !(u.permissions || []).includes(perm.value)) && (
-                                                        <button type="button" onClick={() => setGrantingPermissionUserId(u.id)} className={`text-xs ${darkMode ? 'text-emerald-400 hover:underline' : 'text-emerald-600 hover:underline'}`}>+ Añadir permiso</button>
+                                                        <button type="button" onClick={() => setGrantingPermissionUserId(u.id)} className={`text-xs ${darkMode ? 'text-[#D6B45B] hover:underline' : 'text-[#B7962D] hover:underline'}`}>+ Añadir permiso</button>
                                                     )
                                                 )}
                                             </div>
@@ -808,8 +800,8 @@ export default function AdminGestionUsuarios() {
                                                             <NextImage src={showAdminPassword ? '/Imagenes/icon_ojo_cerrado.png' : '/Imagenes/icon_ojo_abierto.png'} alt="" width={18} height={18} className="object-contain" />
                                                         </button>
                                                     </span>
-                                                    <button type="button" onClick={handleSaveEdit} className={btn('emerald')}>Guardar</button>
-                                                    <button type="button" onClick={() => handleSetRole(u.id)} className={btn('emerald')}>Asignar rol</button>
+                                                    <button type="button" onClick={handleSaveEdit} className={btn('gold')}>Guardar</button>
+                                                    <button type="button" onClick={() => handleSetRole(u.id)} className={btn('gold')}>Asignar rol</button>
                                                     <button type="button" onClick={() => setEditingUser(null)} className={btn('muted')}>Cancelar</button>
                                                 </div>
                                             ) : resettingUserId === u.id ? (
@@ -834,8 +826,8 @@ export default function AdminGestionUsuarios() {
                                                                         <p className={`font-semibold mb-1.5 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Requisitos</p>
                                                                         <ul className="space-y-1">
                                                                             {passwordRequirements.map(({ key, label, met }) => (
-                                                                                <li key={key} className={`flex items-center gap-1.5 ${met ? 'text-green-600 dark:text-green-400' : darkMode ? 'text-red-400' : 'text-red-600'}`}>
-                                                                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${met ? 'border-green-500 bg-green-500 text-white' : 'border-red-500 bg-transparent'}`}>
+                                                                                <li key={key} className={`flex items-center gap-1.5 ${met ? 'text-[#A88A2B] dark:text-[#D6B45B]' : darkMode ? 'text-red-400' : 'text-red-600'}`}>
+                                                                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${met ? 'border-[#B7962D] bg-[#B7962D] text-white' : 'border-red-500 bg-transparent'}`}>
                                                                                         {met ? <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 12 12"><path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" /></svg> : null}
                                                                                     </span>
                                                                                     <span>{label}</span>
@@ -868,8 +860,8 @@ export default function AdminGestionUsuarios() {
                                                                         {newPasswordConfirmation.length === 0 ? (
                                                                             <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Escribe la misma contraseña.</p>
                                                                         ) : newPassword === newPasswordConfirmation ? (
-                                                                            <p className="text-green-600 dark:text-green-400 flex items-center gap-1.5">
-                                                                                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-green-500 bg-green-500 text-white"><svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 12 12"><path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" /></svg></span>
+                                                                            <p className="text-[#A88A2B] dark:text-[#D6B45B] flex items-center gap-1.5">
+                                                                                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-[#B7962D] bg-[#B7962D] text-white"><svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 12 12"><path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" /></svg></span>
                                                                                 Coinciden
                                                                             </p>
                                                                         ) : (
@@ -889,12 +881,12 @@ export default function AdminGestionUsuarios() {
                                                             <NextImage src={showAdminPassword ? '/Imagenes/icon_ojo_cerrado.png' : '/Imagenes/icon_ojo_abierto.png'} alt="" width={18} height={18} className="object-contain" />
                                                         </button>
                                                     </span>
-                                                    <button type="submit" className={btn('emerald')}>Cambiar</button>
+                                                    <button type="submit" className={btn('gold')}>Cambiar</button>
                                                     <button type="button" onClick={() => { setResettingUserId(null); setNewPassword(''); setNewPasswordConfirmation(''); setAdminPassword('') }} className={btn('muted')}>Cancelar</button>
                                                 </form>
                                             ) : (
                                                 <div className="flex flex-wrap gap-2">
-                                                    <button type="button" onClick={() => handleEdit(u)} className={btn('emerald')}>
+                                                    <button type="button" onClick={() => handleEdit(u)} className={btn('gold')}>
                                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                                         Editar
                                                     </button>
@@ -936,7 +928,7 @@ export default function AdminGestionUsuarios() {
                                     onClick={() => setPaginaListado(num)}
                                     className={`min-w-[2.5rem] h-10 px-3 rounded-lg font-semibold text-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent ${
                                         num === paginaListadoActual
-                                            ? 'bg-emerald-600 text-white shadow-md focus:ring-emerald-500'
+                                            ? 'bg-[#B7962D] text-white shadow-md focus:ring-[#C9A84C]'
                                             : darkMode
                                                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600 focus:ring-gray-500'
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300 focus:ring-gray-400'

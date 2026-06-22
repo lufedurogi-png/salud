@@ -41,7 +41,7 @@ function drawHeaderFooter(doc, titulo, subtitulo) {
     doc.setFontSize(14)
     doc.setFont(undefined, 'bold')
     // Dejamos libre el área del logo de la hoja membretada.
-    doc.text('NXT.IT - Reporte estadístico', margin, 40)
+    doc.text('Salud sin barreras - Reporte estadístico', margin, 40)
     doc.setFontSize(10.5)
     doc.text(titulo, margin, 46)
     doc.setFont(undefined, 'normal')

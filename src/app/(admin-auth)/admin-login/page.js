@@ -10,10 +10,6 @@ import { useAdminTheme } from '@/app/(admin-auth)/AdminThemeContext'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const accentColor = 'emerald'
-const accentFrom = '#059669'
-const accentTo = '#10b981'
-
 export default function AdminLogin() {
     const router = useRouter()
     const { login } = useAdminAuth({
@@ -52,7 +48,7 @@ export default function AdminLogin() {
         <div className="relative w-full overflow-hidden" style={{ height: 'calc(100vh - 4rem)' }}>
             <div className="flex flex-col lg:flex-row h-full w-full relative">
                 <div
-                    className={`lg:absolute lg:left-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#059669] to-[#10b981] transition-all duration-1000 ease-in-out z-50 order-1 ${
+                    className={`lg:absolute lg:left-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#9B8242] via-[#A88A2B] to-[#D8C087] transition-all duration-1000 ease-in-out z-50 order-1 ${
                         isExpanded ? 'h-full fixed top-0 bottom-0 left-0' : 'h-auto lg:h-full min-h-[250px] sm:min-h-[300px] lg:min-h-0'
                     }`}
                     style={{
@@ -82,7 +78,7 @@ export default function AdminLogin() {
                                         id="email"
                                         type="email"
                                         value={email}
-                                        className={`block w-full px-4 py-3 pl-11 rounded-lg text-sm border-2 transition-colors focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 ${
+                                        className={`block w-full px-4 py-3 pl-11 rounded-lg text-sm border-2 transition-colors focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C] ${
                                             darkMode
                                                 ? (email.trim() ? 'bg-[#E5EBFD] border-gray-600 text-gray-900' : 'bg-gray-800 border-gray-700 text-white')
                                                 : (email.trim() ? 'bg-[#E5EBFD] border-gray-300 text-gray-900' : 'bg-white border-gray-300 text-gray-900')
@@ -107,7 +103,7 @@ export default function AdminLogin() {
                                         id="password"
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
-                                        className={`block w-full px-4 py-3 pl-11 pr-12 rounded-lg text-sm border-2 transition-colors focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 ${
+                                        className={`block w-full px-4 py-3 pl-11 pr-12 rounded-lg text-sm border-2 transition-colors focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C] ${
                                             darkMode
                                                 ? (password.trim() ? 'bg-[#E5EBFD] border-gray-600 text-gray-900' : 'bg-gray-800 border-gray-700 text-white')
                                                 : (password.trim() ? 'bg-[#E5EBFD] border-gray-300 text-gray-900' : 'bg-white border-gray-300 text-gray-900')
@@ -124,7 +120,7 @@ export default function AdminLogin() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword((s) => !s)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50"
                                         aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                                         tabIndex={0}
                                     >
@@ -136,7 +132,7 @@ export default function AdminLogin() {
 
                             {errors.general && <InputError messages={errors.general} className="mt-2" />}
 
-                            <Button type="submit" className="w-full bg-gradient-to-r from-[#059669] to-[#10b981] hover:from-[#10b981] hover:to-[#059669] text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform mt-2">
+                            <Button type="submit" className="w-full bg-gradient-to-r from-[#B7962D] to-[#C9A84C] hover:from-[#C9A84C] hover:to-[#A88A2B] text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform mt-2">
                                 INICIAR SESIÓN
                             </Button>
                         </form>

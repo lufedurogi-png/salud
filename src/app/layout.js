@@ -1,4 +1,5 @@
 import { Nunito, Playfair_Display, VT323 } from 'next/font/google'
+import ThemeInitScript from '@/components/ThemeInitScript'
 import '@/app/global.css'
 
 const nunitoFont = Nunito({
@@ -27,6 +28,9 @@ const RootLayout = ({ children }) => {
             suppressHydrationWarning
             className={`${nunitoFont.className} ${playfairDisplay.variable} ${vt323.variable}`}
         >
+            <head>
+                <ThemeInitScript />
+            </head>
             <body className="antialiased bg-gray-950 w-full overflow-x-hidden" suppressHydrationWarning>
                 {children}
             </body>
@@ -34,12 +38,14 @@ const RootLayout = ({ children }) => {
     )
 }
 
+import { BRAND_LOGO_SRC, BRAND_TITLE } from '@/lib/branding'
+
 export const metadata = {
-    title: 'Todo para oficina',
+    title: BRAND_TITLE,
     icons: {
-        icon: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
-        shortcut: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
-        apple: '/Imagenes/icon_logo_todoparalaoficina.jpeg',
+        icon: BRAND_LOGO_SRC,
+        shortcut: BRAND_LOGO_SRC,
+        apple: BRAND_LOGO_SRC,
     },
 }
 

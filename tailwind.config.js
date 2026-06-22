@@ -3,6 +3,10 @@ module.exports = {
     darkMode: 'class',
     theme: {
         extend: {
+            /* Panel cliente: sidebar antes que el breakpoint xl por defecto (1280px) */
+            screens: {
+                desktop: '900px',
+            },
             keyframes: {
                 'loading-bar': {
                     '0%': { transform: 'translateX(-100%)' },

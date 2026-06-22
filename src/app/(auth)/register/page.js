@@ -7,9 +7,8 @@ import InputError from '@/components/InputError'
 import Label from '@/components/Label'
 import { useAuth } from '@/hooks/auth'
 import { useState, useEffect } from 'react'
+import { useDarkModePreference } from '@/hooks/useDarkModePreference'
 import { useRouter } from 'next/navigation'
-import { PrivacyNoticeModal } from '@/components/PrivacyNoticeReader'
-
 const Page = () => {
     const router = useRouter()
     const { register } = useAuth({
@@ -26,52 +25,12 @@ const Page = () => {
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [remember, setRemember] = useState(false)
-    const [privacyAccepted, setPrivacyAccepted] = useState(false)
-    const [privacyModalOpen, setPrivacyModalOpen] = useState(false)
     const [errors, setErrors] = useState([])
     const [isTransitioning, setIsTransitioning] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
 
-    const [darkMode, setDarkMode] = useState(true)
-
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem('darkMode')
-            if (saved !== null) {
-                setDarkMode(JSON.parse(saved))
-            }
-        } catch {
-            // ignorar
-        }
-    }, [])
-
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-        localStorage.setItem('darkMode', JSON.stringify(darkMode))
-    }, [darkMode])
-
-    useEffect(() => {
-        const handleDarkModeChange = (e) => {
-            setDarkMode(e.detail)
-        }
-        const handleStorageChange = (e) => {
-            if (e.key === 'darkMode') {
-                const newMode = JSON.parse(e.newValue)
-                setDarkMode(newMode)
-            }
-        }
-        window.addEventListener('darkModeChange', handleDarkModeChange)
-        window.addEventListener('storage', handleStorageChange)
-        return () => {
-            window.removeEventListener('darkModeChange', handleDarkModeChange)
-            window.removeEventListener('storage', handleStorageChange)
-        }
-    }, [])
+    const { darkMode } = useDarkModePreference()
 
     // Detectar tamaño de pantalla
     useEffect(() => {
@@ -114,10 +73,6 @@ const Page = () => {
     const submitForm = event => {
         event.preventDefault()
 
-        if (!privacyAccepted) {
-            setErrors({ general: ['Debes aceptar el aviso de privacidad para registrarte.'] })
-            return
-        }
         register({
             name,
             email,
@@ -130,11 +85,9 @@ const Page = () => {
 
     return (
         <div className="relative w-full flex-1 flex flex-col min-h-0 h-full" style={{ minHeight: 'calc(100vh - 4rem)' }}>
-            <PrivacyNoticeModal darkMode={darkMode} open={privacyModalOpen} onClose={() => setPrivacyModalOpen(false)} />
-
             {/* Contenedor principal: desplazado a la derecha en lg+ para que se vea más centrado en la página */}
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 w-full max-w-[1920px] mx-auto relative lg:pl-[14vw] xl:pl-[18vw] 2xl:pl-[22vw]">
-                {/* Lado izquierdo - Formulario de Registro (mismo ancho efectivo que la franja naranja: max-w-md + padding) */}
+                {/* Lado izquierdo - Formulario de Registro */}
                 <div className={`flex-1 flex items-start justify-center p-4 pt-6 sm:p-6 sm:pt-10 md:pt-12 lg:flex lg:items-center lg:p-8 lg:px-10 xl:px-14 2xl:px-20 transition-all duration-300 ease-out min-w-0 order-2 lg:order-1 lg:min-w-0 lg:max-w-[60%] xl:max-w-[55%] mt-4 sm:mt-8 md:mt-10 lg:mt-0 ${
                     (showPasswordModal || showConfirmModal) ? 'pr-44 sm:pr-48 lg:pr-52 z-[50]' : ''
                 } ${
@@ -166,8 +119,8 @@ const Page = () => {
                                         value={name}
                                         className={`block w-full px-4 py-3 pl-12 rounded-lg text-sm transition-all duration-200 ${
                                             darkMode 
-                                                ? (name.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
-                                                : (name.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
+                                                ? (name.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
+                                                : (name.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
                                         }`}
                                         onChange={event => setName(event.target.value)}
                                         required
@@ -194,8 +147,8 @@ const Page = () => {
                                         value={email}
                                         className={`block w-full px-4 py-3 pl-12 rounded-lg text-sm transition-all duration-200 ${
                                             darkMode 
-                                                ? (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
-                                                : (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
+                                                ? (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
+                                                : (email.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
                                         }`}
                                         onChange={event => setEmail(event.target.value)}
                                         required
@@ -221,8 +174,8 @@ const Page = () => {
                                         value={password}
                                         className={`block w-full px-4 py-3 pl-12 pr-12 rounded-lg text-sm transition-all duration-200 ${
                                             darkMode 
-                                                ? (password.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
-                                                : (password.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
+                                                ? (password.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
+                                                : (password.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
                                         }`}
                                         onChange={event => setPassword(event.target.value)}
                                         onFocus={() => setShowPasswordModal(true)}
@@ -238,7 +191,7 @@ const Page = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword((s) => !s)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#FF8000]/50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#B7962D]/50"
                                         aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                                         tabIndex={0}
                                     >
@@ -318,8 +271,8 @@ const Page = () => {
                                         value={passwordConfirmation}
                                         className={`block w-full px-4 py-3 pl-12 pr-12 rounded-lg text-sm transition-all duration-200 ${
                                             darkMode 
-                                                ? (passwordConfirmation.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
-                                                : (passwordConfirmation.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#FF8000] focus:ring-2 focus:ring-[#FF8000]/20')
+                                                ? (passwordConfirmation.trim() ? 'bg-[#E5EBFD] border-2 border-gray-600 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-400 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
+                                                : (passwordConfirmation.trim() ? 'bg-[#E5EBFD] border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20' : 'bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#B7962D] focus:ring-2 focus:ring-[#B7962D]/20')
                                         }`}
                                         onChange={event => setPasswordConfirmation(event.target.value)}
                                         onFocus={() => setShowConfirmModal(true)}
@@ -334,7 +287,7 @@ const Page = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowPasswordConfirmation((s) => !s)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#FF8000]/50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#B7962D]/50"
                                         aria-label={showPasswordConfirmation ? 'Ocultar confirmación' : 'Ver confirmación'}
                                         tabIndex={0}
                                     >
@@ -399,68 +352,24 @@ const Page = () => {
                             </div>
 
                             <div className="space-y-4 lg:min-w-0">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
-                                    <label
-                                        htmlFor="remember"
-                                        className={`inline-flex shrink-0 cursor-pointer items-center ${
-                                            darkMode ? 'text-white' : 'text-gray-700'
+                                <label
+                                    htmlFor="remember"
+                                    className={`inline-flex cursor-pointer items-center ${
+                                        darkMode ? 'text-white' : 'text-gray-700'
+                                    }`}
+                                >
+                                    <input
+                                        id="remember"
+                                        type="checkbox"
+                                        name="remember"
+                                        className={`rounded border-gray-300 text-[#B7962D] shadow-sm focus:border-[#B7962D] focus:ring focus:ring-[#B7962D] focus:ring-opacity-50 ${
+                                            darkMode ? 'border-gray-600 bg-gray-800' : 'bg-white'
                                         }`}
-                                    >
-                                        <input
-                                            id="remember"
-                                            type="checkbox"
-                                            name="remember"
-                                            className={`rounded border-gray-300 text-[#FF8000] shadow-sm focus:border-[#FF8000] focus:ring focus:ring-[#FF8000] focus:ring-opacity-50 ${
-                                                darkMode ? 'border-gray-600 bg-gray-800' : 'bg-white'
-                                            }`}
-                                            checked={remember}
-                                            onChange={(event) => setRemember(event.target.checked)}
-                                        />
-                                        <span className="ml-2 text-sm">Recordarme</span>
-                                    </label>
-                                    <div className="flex min-w-0 flex-1 items-start gap-2">
-                                        <input
-                                            id="privacy_accept"
-                                            type="checkbox"
-                                            className={`mt-0.5 shrink-0 rounded border-gray-300 text-[#FF8000] shadow-sm focus:border-[#FF8000] focus:ring focus:ring-[#FF8000] focus:ring-opacity-50 ${
-                                                darkMode ? 'border-gray-600 bg-gray-800' : 'bg-white'
-                                            }`}
-                                            checked={privacyAccepted}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked
-                                                setPrivacyAccepted(checked)
-                                                if (checked) {
-                                                    setPrivacyModalOpen(true)
-                                                }
-                                            }}
-                                        />
-                                        <label
-                                            htmlFor="privacy_accept"
-                                            className={`cursor-pointer text-sm leading-snug ${darkMode ? 'text-white' : 'text-gray-700'}`}
-                                        >
-                                            Confirmo que he leído el{' '}
-                                            <span
-                                                role="button"
-                                                tabIndex={0}
-                                                className="font-semibold text-[#FF8000] hover:underline"
-                                                onClick={(e) => {
-                                                    e.preventDefault()
-                                                    e.stopPropagation()
-                                                    setPrivacyModalOpen(true)
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                        e.preventDefault()
-                                                        setPrivacyModalOpen(true)
-                                                    }
-                                                }}
-                                            >
-                                                aviso de privacidad
-                                            </span>
-                                            .
-                                        </label>
-                                    </div>
-                                </div>
+                                        checked={remember}
+                                        onChange={(event) => setRemember(event.target.checked)}
+                                    />
+                                    <span className="ml-2 text-sm">Recordarme</span>
+                                </label>
 
                             {/* Error general */}
                             {errors.general && (
@@ -471,8 +380,7 @@ const Page = () => {
 
                             <Button 
                                 type="submit"
-                                disabled={!privacyAccepted}
-                                className="w-full bg-gradient-to-r from-[#FF8000] to-[#FF9500] hover:from-[#FF9500] hover:to-[#FF8000] text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                className="w-full bg-gradient-to-r from-[#B7962D] to-[#D6B45B] hover:from-[#A88A2B] hover:to-[#C9A84C] text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform"
                             >
                                 Registrarse
                             </Button>
@@ -483,8 +391,8 @@ const Page = () => {
                                     onClick={handleSwitchToLogin}
                                     className={`text-sm transition-colors ${
                                         darkMode 
-                                            ? 'text-gray-200 hover:text-[#FF8000]' 
-                                            : 'text-gray-600 hover:text-[#FF8000]'
+                                            ? 'text-gray-200 hover:text-[#B7962D]' 
+                                            : 'text-gray-600 hover:text-[#B7962D]'
                                     }`}
                                 >
                                     ¿Ya tienes cuenta? <span className="font-semibold">Iniciar sesión</span>
@@ -496,9 +404,9 @@ const Page = () => {
                     </div>
                 </div>
 
-                {/* Franja naranja: en vista dividida arriba (order-1) con altura fija; en lg a la derecha a altura completa */}
+                {/* Franja dorada: en vista dividida arriba (order-1); en lg a la derecha a altura completa */}
                 <div 
-                    className={`lg:absolute lg:right-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#FF8000] to-[#FF9500] transition-all duration-1000 ease-in-out z-30 order-1 lg:order-2 flex-none min-h-[200px] sm:min-h-[220px] lg:min-h-0 lg:h-full lg:flex-1 ${
+                    className={`lg:absolute lg:right-0 lg:top-0 lg:bottom-0 flex items-center justify-center bg-gradient-to-br from-[#B7962D] to-[#D6B45B] transition-all duration-1000 ease-in-out z-30 order-1 lg:order-2 flex-none min-h-[200px] sm:min-h-[220px] lg:min-h-0 lg:h-full lg:flex-1 ${
                         isExpanded 
                             ? 'h-full fixed top-0 bottom-0 right-0' 
                             : 'lg:h-full min-h-0'
@@ -535,7 +443,7 @@ const Page = () => {
                             <button
                                 type="button"
                                 onClick={handleSwitchToLogin}
-                                className="rounded-lg border-2 border-white px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-white hover:text-[#FF8000] sm:px-8 sm:py-3 sm:text-base"
+                                className="rounded-lg border-2 border-white px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-white hover:text-[#B7962D] sm:px-8 sm:py-3 sm:text-base"
                             >
                                 Iniciar sesión
                             </button>

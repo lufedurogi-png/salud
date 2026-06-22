@@ -1,43 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { BRAND_LOGO_SRC, BRAND_NAME } from '@/lib/branding'
+import { useDarkModePreference } from '@/hooks/useDarkModePreference'
 
 const Layout = ({ children }) => {
-    // Mismo valor en servidor y primer render cliente (evita error de hidratación); se sincroniza con localStorage al montar.
-    const [darkMode, setDarkMode] = useState(true)
-
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem('darkMode')
-            if (saved !== null) {
-                setDarkMode(JSON.parse(saved))
-            }
-        } catch {
-            // ignorar
-        }
-    }, [])
-
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-        localStorage.setItem('darkMode', JSON.stringify(darkMode))
-    }, [darkMode])
-
-    useEffect(() => {
-        const handleStorageChange = (e) => {
-            if (e.key === 'darkMode') {
-                const newMode = JSON.parse(e.newValue)
-                setDarkMode(newMode)
-            }
-        }
-        window.addEventListener('storage', handleStorageChange)
-        return () => window.removeEventListener('storage', handleStorageChange)
-    }, [])
+    const { darkMode, setDarkMode } = useDarkModePreference()
 
     const pill = `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
         darkMode ? 'bg-gray-800/80 text-gray-200 hover:bg-gray-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
@@ -55,8 +24,8 @@ const Layout = ({ children }) => {
                     <div className="hidden md:flex items-center justify-between h-16">
                         <Link href="/" className="flex items-center">
                             <Image
-                                src="/Imagenes/logo_en.png"
-                                alt="Todo para oficina"
+                                src={BRAND_LOGO_SRC}
+                                alt={BRAND_NAME}
                                 width={120}
                                 height={40}
                                 className="h-8 w-auto"
@@ -79,14 +48,8 @@ const Layout = ({ children }) => {
                                     />
                                 </div>
                                 <button
-                                    onClick={() => {
-                                        const newMode = !darkMode
-                                        setDarkMode(newMode)
-                                        localStorage.setItem('darkMode', JSON.stringify(newMode))
-                                        // Disparar evento personalizado para sincronizar otros componentes
-                                        window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
-                                    }}
-                                    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#FF8000] focus:ring-offset-2 ${
+                                    onClick={() => setDarkMode(!darkMode)}
+                                    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#B7962D] focus:ring-offset-2 ${
                                         darkMode 
                                             ? 'bg-[#2b4e94]' 
                                             : 'bg-gray-300'
@@ -100,7 +63,7 @@ const Layout = ({ children }) => {
                                     />
                                 </button>
                                 <span className={`text-xs font-medium ${
-                                    darkMode ? 'text-[#FF8000]' : 'text-gray-500'
+                                    darkMode ? 'text-[#B7962D]' : 'text-gray-500'
                                 }`}>
                                     {darkMode ? 'Oscuro' : 'Claro'}
                                 </span>
@@ -108,7 +71,7 @@ const Layout = ({ children }) => {
                             <Link
                                 href="/"
                                 className={`transition-colors font-medium ${
-                                    darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'
+                                    darkMode ? 'text-gray-300 hover:text-[#B7962D]' : 'text-gray-700 hover:text-[#B7962D]'
                                 }`}
                             >
                                 Inicio
@@ -116,7 +79,7 @@ const Layout = ({ children }) => {
                             <Link
                                 href="/"
                                 className={`transition-colors font-medium ${
-                                    darkMode ? 'text-gray-300 hover:text-[#FF8000]' : 'text-gray-700 hover:text-[#FF8000]'
+                                    darkMode ? 'text-gray-300 hover:text-[#B7962D]' : 'text-gray-700 hover:text-[#B7962D]'
                                 }`}
                             >
                                 Tienda
@@ -128,7 +91,7 @@ const Layout = ({ children }) => {
                     <div className="md:hidden py-3 space-y-3">
                         <div className="flex justify-center">
                             <Link href="/" className="flex items-center">
-                                <Image src="/Imagenes/logo_en.png" alt="Todo para oficina" width={110} height={36} className="h-8 w-auto" />
+                                <Image src={BRAND_LOGO_SRC} alt={BRAND_NAME} width={110} height={36} className="h-8 w-auto" />
                             </Link>
                         </div>
                         <div className={`flex flex-wrap items-center gap-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
@@ -142,12 +105,7 @@ const Layout = ({ children }) => {
                                 />
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        const newMode = !darkMode
-                                        setDarkMode(newMode)
-                                        localStorage.setItem('darkMode', JSON.stringify(newMode))
-                                        window.dispatchEvent(new CustomEvent('darkModeChange', { detail: newMode }))
-                                    }}
+                                    onClick={() => setDarkMode(!darkMode)}
                                     className={`relative inline-flex h-6 w-12 shrink-0 items-center rounded-full transition-colors ${
                                         darkMode ? 'bg-[#2b4e94]' : 'bg-gray-300'
                                     }`}
@@ -172,129 +130,6 @@ const Layout = ({ children }) => {
             <main className="flex-1 flex flex-col relative min-h-0 min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)]">
                 {children}
             </main>
-
-            {/* Footer: siempre abajo, se ajusta al viewport */}
-            <footer className={`border-t transition-colors duration-300 flex-shrink-0 mt-auto ${
-                darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
-            }`}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {/* Información de Contacto */}
-                        <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="relative w-8 h-8">
-                                    <Image
-                                        src="/Imagenes/icon_contacto.png"
-                                        alt="Contacto"
-                                        fill
-                                        className={`object-contain ${
-                                            darkMode ? 'brightness-0 invert' : ''
-                                        }`}
-                                    />
-                                </div>
-                                <h3 className={`text-xl font-bold ${
-                                    darkMode ? 'text-white' : 'text-gray-900'
-                                }`}>
-                                    Contáctanos
-                                </h3>
-                            </div>
-                            <div className={`space-y-2 ${
-                                darkMode ? 'text-gray-300' : 'text-gray-700'
-                            }`}>
-                                <p className="text-lg font-semibold text-[#FF8000]">333 616-7279</p>
-                                <p className="text-base">desarrollo@nxt.it.com</p>
-                                <p className="text-sm leading-relaxed">
-                                    Av. Lopez Mateos #1038-11, Col Italia Providencia CP 44630<br />
-                                    Jalisco, Guadalajara
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Enlaces Rápidos */}
-                        <div>
-                            <h3 className={`text-lg font-semibold mb-4 ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                                Enlaces rápidos
-                            </h3>
-                            <ul className={`space-y-2 ${
-                                darkMode ? 'text-gray-300' : 'text-gray-700'
-                            }`}>
-                                <li>
-                                    <Link href="/" className="hover:text-[#FF8000] transition-colors">
-                                        Inicio
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/" className="hover:text-[#FF8000] transition-colors">
-                                        Tienda
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/login" className="hover:text-[#FF8000] transition-colors">
-                                        Iniciar Sesión
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/admin-login" className="hover:text-[#FF8000] transition-colors">
-                                        Admin
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/ventas-login" className="hover:text-[#FF8000] transition-colors">
-                                        Ventas
-                                    </Link>
-                                </li>
-                            </ul>
-                        </div>
-
-                        {/* Información de la Empresa */}
-                        <div>
-                            <h3 className={`text-lg font-semibold mb-4 ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                                Sobre nosotros
-                            </h3>
-                            <p className={`text-sm leading-relaxed ${
-                                darkMode ? 'text-gray-300' : 'text-gray-700'
-                            }`}>
-                                Fundada en 2009 como Arrcuss Comercial de S de RL de CV, ahora NXT.IT, 
-                                nació como un proyecto emprendedor para democratizar la creciente necesidad 
-                                por equipo de cómputo y electrónica de las PYMES.
-                            </p>
-                        </div>
-
-                        {/* Redes Sociales / Información Adicional */}
-                        <div>
-                            <h3 className={`text-lg font-semibold mb-4 ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                                Información
-                            </h3>
-                            <div className={`space-y-2 text-sm ${
-                                darkMode ? 'text-gray-300' : 'text-gray-700'
-                            }`}>
-                                <p>
-                                    <span className="font-semibold">Misión:</span> Incrementar las capacidades 
-                                    de nuestros clientes mediante innovadoras soluciones de software, hardware 
-                                    y tecnología de consumo.
-                                </p>
-                                <p>
-                                    <span className="font-semibold">Visión:</span> Ser una empresa reconocida 
-                                    por su liderazgo en el mercado de Tecnologías de la Información.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Copyright */}
-                    <div className={`mt-8 pt-8 border-t text-center text-sm ${
-                        darkMode ? 'border-gray-800 text-gray-400' : 'border-gray-200 text-gray-600'
-                    }`}>
-                        <p>&copy; {new Date().getFullYear()} NXT.IT. Todos los derechos reservados.</p>
-                    </div>
-                </div>
-            </footer>
         </div>
     )
 }
