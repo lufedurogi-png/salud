@@ -40,6 +40,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/routine', [ClientController::class, 'routine']);
             Route::post('/routine/{weekday}/completion', [ClientController::class, 'markRoutineDay']);
             Route::post('/routine/date/{date}/completion', [ClientController::class, 'markRoutineSession']);
+            Route::put('/routine/date/{date}/comment', [ClientController::class, 'saveRoutineComment']);
+            Route::put('/routine/comments/{commentId}', [ClientController::class, 'updateRoutineComment']);
+            Route::delete('/routine/comments/{commentId}', [ClientController::class, 'deleteRoutineComment']);
             Route::get('/store/plans', [ClientController::class, 'storePlans']);
             Route::get('/store/discount', [ClientController::class, 'storeDiscount']);
             Route::post('/store/purchase', [ClientController::class, 'buyPlan']);

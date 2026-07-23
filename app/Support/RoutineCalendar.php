@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\RoutineCompletionLog;
 use App\Models\RoutineSession;
+use App\Models\RoutineClientComment;
 use App\Models\UserPlanSubscription;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -32,6 +33,13 @@ class RoutineCalendar
             ->get()
             ->keyBy(fn ($log) => $log->completed_on->toDateString());
 
+        $commentsByDate = RoutineClientComment::query()
+            ->where('user_id', $userId)
+            ->whereBetween('comment_date', [$today->toDateString(), $monthEnd->toDateString()])
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy(fn (RoutineClientComment $c) => $c->comment_date->toDateString());
+
         $items = [];
         $cursor = $today->copy();
 
@@ -42,6 +50,13 @@ class RoutineCalendar
             /** @var RoutineSession|null $session */
             $session = $sessions->get($date);
             $completion = $completions->get($date);
+            $dayComments = $isPaid
+                ? ($commentsByDate->get($date) ?? collect())->map(fn (RoutineClientComment $c) => [
+                    'id' => $c->id,
+                    'body' => $c->body,
+                    'created_at' => optional($c->created_at)?->toIso8601String(),
+                ])->values()->all()
+                : [];
 
             $items[] = [
                 'date' => $date,
@@ -56,6 +71,7 @@ class RoutineCalendar
                 'focus' => $isPaid ? ($session?->focus ?? null) : null,
                 'coach_comments' => $isPaid ? ($session?->coach_comments ?? null) : null,
                 'is_completed' => (bool) ($completion?->is_completed ?? false),
+                'client_comments' => $dayComments,
                 'rows' => $isPaid && $session
                     ? $session->exercises->map(fn ($row) => [
                         'nombre' => $row->name,

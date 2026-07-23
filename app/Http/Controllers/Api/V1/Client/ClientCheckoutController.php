@@ -68,10 +68,15 @@ class ClientCheckoutController extends Controller
                 ], 422);
             }
 
-            if (count($paidDays) < $daysPerWeek) {
+            if (count($paidDaySlots) !== $daysPerWeek) {
+                $received = is_array($data['paid_day_slots'] ?? null) ? count($data['paid_day_slots']) : 0;
+                $valid = count($paidDaySlots);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Debes incluir al menos '.$daysPerWeek.' día(s) distintos de la semana.',
+                    'message' => $valid < $received
+                        ? 'Algunas fechas ya no son válidas (pasaron o no coinciden). Quedaron '.$valid.' de '.$daysPerWeek.' requeridas.'
+                        : 'Debes elegir exactamente '.$daysPerWeek.' fecha(s).',
                 ], 422);
             }
         } else {
@@ -103,7 +108,7 @@ class ClientCheckoutController extends Controller
         $subscription = UserPlanSubscription::create([
             'user_id' => $user->id,
             'plan_id' => $plan->id,
-            'days_per_week' => count($paidDays),
+            'days_per_week' => $daysPerWeek,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
             'paid_days' => $paidDays,

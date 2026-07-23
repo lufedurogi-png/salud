@@ -158,7 +158,9 @@ class AuthController extends Controller
                 'measures' => $user->profile?->measures,
                 'age' => $user->profile?->age,
                 'metabolic_age' => $user->profile?->metabolic_age,
+                'avatar_url' => $user->profile?->avatar_url,
             ],
+            'avatar_url' => $user->profile?->avatar_url,
         ];
     }
 }

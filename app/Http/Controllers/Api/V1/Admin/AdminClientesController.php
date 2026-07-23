@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
+use App\Models\RoutineClientComment;
 use App\Models\RoutineDay;
 use App\Models\RoutineExercise;
 use App\Models\RoutineSession;
@@ -48,6 +49,22 @@ class AdminClientesController extends Controller
                     ->get()
                     ->keyBy(fn (RoutineSession $s) => $s->session_date->toDateString());
 
+                $clientComments = RoutineClientComment::query()
+                    ->where('user_id', $u->id)
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(fn (RoutineClientComment $comment) => [
+                        'id' => $comment->id,
+                        'date' => $comment->comment_date->toDateString(),
+                        'weekday' => (int) $comment->weekday,
+                        'weekday_label' => PaidDaySlots::WEEKDAY_NAMES[(int) $comment->weekday] ?? '',
+                        'weekday_short' => PaidDaySlots::WEEKDAY_SHORT[(int) $comment->weekday] ?? '',
+                        'comment' => $comment->body,
+                        'created_at' => optional($comment->created_at)?->toIso8601String(),
+                    ])
+                    ->values()
+                    ->all();
+
                 return [
                     'id' => $u->id,
                     'name' => $u->name,
@@ -66,6 +83,7 @@ class AdminClientesController extends Controller
                         'ends_at' => optional($sub->ends_at)->toDateString(),
                         'is_active' => $sub->is_active,
                     ] : null,
+                    'client_comments' => $clientComments,
                     'sessions' => collect($activeSlots)->map(function ($slot) use ($sessions) {
                         $date = (string) ($slot['date'] ?? '');
                         $session = $sessions->get($date);

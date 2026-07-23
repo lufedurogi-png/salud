@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\RoutineDay;
 use App\Models\RoutineCompletionLog;
+use App\Models\RoutineClientComment;
 use App\Models\User;
 use App\Models\UserPlanSubscription;
 use App\Models\UserProfile;
@@ -114,6 +115,148 @@ class ClientController extends Controller
         ]);
     }
 
+    public function saveRoutineComment(Request $request, string $date)
+    {
+        $data = $request->validate([
+            'comment' => 'required|string|max:2000',
+        ]);
+
+        $userId = $request->user()->id;
+        $sessionDate = now()->parse($date)->toDateString();
+        $weekday = RoutineCalendar::weekdayFromDate($sessionDate);
+
+        $subscription = $this->activeSubscription($userId);
+        $paidDates = collect(PaidDaySlots::activeSlots($subscription?->paid_day_slots ?? []))
+            ->pluck('date')
+            ->filter()
+            ->all();
+
+        if ($subscription && $paidDates === []) {
+            $startsAt = optional($subscription->starts_at)->toDateString() ?? now()->toDateString();
+            $endsAt = optional($subscription->ends_at)->toDateString() ?? now()->addMonth()->toDateString();
+            $paidDates = collect(
+                PaidDaySlots::buildForPeriod($subscription->paid_days ?? [], $startsAt, $endsAt)
+            )->pluck('date')->filter()->all();
+        }
+
+        if (! in_array($sessionDate, $paidDates, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo puedes comentar días incluidos en tu plan.',
+            ], 422);
+        }
+
+        $row = RoutineCompletionLog::query()
+            ->where('user_id', $userId)
+            ->whereDate('completed_on', $sessionDate)
+            ->where('weekday', $weekday)
+            ->first();
+
+        if (! $row || ! $row->is_completed) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Marca el día como completado antes de dejar un comentario.',
+            ], 422);
+        }
+
+        $comment = trim((string) $data['comment']);
+        if ($comment === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Escribe un comentario antes de guardar.',
+            ], 422);
+        }
+
+        $created = RoutineClientComment::query()->create([
+            'user_id' => $userId,
+            'comment_date' => $sessionDate,
+            'weekday' => $weekday,
+            'body' => $comment,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Comentario guardado.',
+            'data' => [
+                'date' => $sessionDate,
+                'comment' => [
+                    'id' => $created->id,
+                    'body' => $created->body,
+                    'created_at' => optional($created->created_at)?->toIso8601String(),
+                ],
+            ],
+        ]);
+    }
+
+    public function updateRoutineComment(Request $request, int $commentId)
+    {
+        $data = $request->validate([
+            'comment' => 'required|string|max:2000',
+        ]);
+
+        $comment = RoutineClientComment::query()
+            ->where('id', $commentId)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (! $comment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Comentario no encontrado.',
+            ], 404);
+        }
+
+        $body = trim((string) $data['comment']);
+        if ($body === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Escribe un comentario antes de guardar.',
+            ], 422);
+        }
+
+        $comment->body = $body;
+        $comment->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Comentario actualizado.',
+            'data' => [
+                'comment' => [
+                    'id' => $comment->id,
+                    'body' => $comment->body,
+                    'created_at' => optional($comment->created_at)?->toIso8601String(),
+                ],
+            ],
+        ]);
+    }
+
+    public function deleteRoutineComment(Request $request, int $commentId)
+    {
+        $comment = RoutineClientComment::query()
+            ->where('id', $commentId)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (! $comment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Comentario no encontrado.',
+            ], 404);
+        }
+
+        $date = $comment->comment_date->toDateString();
+        $comment->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Comentario eliminado.',
+            'data' => [
+                'date' => $date,
+                'id' => $commentId,
+            ],
+        ]);
+    }
+
     public function markRoutineDay(Request $request, int $weekday)
     {
         $data = $request->validate([
@@ -218,7 +361,7 @@ class ClientController extends Controller
     public function uploadAvatar(Request $request)
     {
         $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:15360',
         ]);
 
         $user = $request->user();

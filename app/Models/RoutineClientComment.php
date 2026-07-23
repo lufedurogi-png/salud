@@ -5,22 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class RoutineCompletionLog extends Model
+class RoutineClientComment extends Model
 {
     protected $fillable = [
         'user_id',
-        'routine_day_id',
+        'comment_date',
         'weekday',
-        'completed_on',
-        'is_completed',
-        'client_comment',
+        'body',
     ];
 
     protected function casts(): array
     {
         return [
-            'completed_on' => 'date',
-            'is_completed' => 'boolean',
+            'comment_date' => 'date',
             'weekday' => 'integer',
         ];
     }
@@ -29,10 +26,4 @@ class RoutineCompletionLog extends Model
     {
         return $this->belongsTo(User::class);
     }
-
-    public function routineDay(): BelongsTo
-    {
-        return $this->belongsTo(RoutineDay::class);
-    }
 }
-
